@@ -2,7 +2,7 @@
   "production": {
     "host": "localhost",
     "port": 3306,
-    "database": "Student Management",
+    "database": "student_management",
     "username": "root",
     "password": "orlando"
   },
