@@ -3,12 +3,12 @@ const { sequelize } = require('../models');
 class login {
     static async login(req, res, next) {
         res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
-        const { id, passwd } = req.body;
+        const { username, password } = req.body;
 
-        await sequelize.query(`SELECT * FROM student WHERE username = ? AND password = ?`, {replacements:[id, passwd], type: sequelize.QueryTypes.SELECT})
+        await sequelize.query(`SELECT * FROM users WHERE username = ? AND password = ?`, {replacements:[username, password], type: sequelize.QueryTypes.SELECT})
             .then(result => {
                 if(result[0] !== undefined) {
-                    if(result[0].username === id && result[0].password === passwd) {
+                    if(result[0].username === username && result[0].password === password) {
                         res.send({ status: "Success" });
                     }
                 }
