@@ -4,6 +4,7 @@ const apiRoutes = require('./routes/api');
 const http = require('http');
 const nconf = require('nconf');
 const bodyParser = require('body-parser');
+const cors = require('cors');
 
 const app = express();
 
@@ -24,6 +25,7 @@ nconf.defaults({
 });
 
 app.use(bodyParser.json());
+app.use(cors());
 app.use('/api', apiRoutes);
 
 var server = http.createServer(app);
