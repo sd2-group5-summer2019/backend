@@ -9,13 +9,14 @@ const { sequelize } = require('../models');
 class submitSurvey {
     static async submitSurvey(req, res, next) {
         res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
-        const { question_id, form_id, text } = req.body;
+        const {user_id, question_id, form_id, text } = req.body;
 
-        await sequelize.query(`CALL submitSurvey(?,?,?)`, 
-        {replacements:[question_id, form_id, text], type: sequelize.QueryTypes.CALL})
-            .then(result => { res.send({ status: result });
-            }).catch(error => { res.send({ status : "Unkonw error"}); 
-        });
+        await sequelize.query(`CALL submitSurvey(?,?,?,?)`, 
+        {replacements:[user_id, question_id, form_id, text], type: sequelize.QueryTypes.CALL})
+            .then(result => { res.send({ status: "Success" });
+            }).catch(error => {res.send({status : "error" });
+            console.log(error)}); 
+        
     }
 }
 

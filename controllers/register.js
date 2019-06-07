@@ -5,7 +5,7 @@ class register {
         res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
         const { username, password, type, first_name, last_name, email } = req.body;
 
-        await sequelize.query(`INSERT INTO users (username, password, type, first_name, last_name, email) VALUES (?,?,?,?,?,?);`, 
+        await sequelize.query(`CALL  register(?,?,?,?,?,?);`, 
         {replacements:[username, password, type, first_name, last_name, email], type: sequelize.QueryTypes.INSERT})
             .then(result => {
                 // DB will return if insert was successful and how many rows were inserted.
