@@ -22,7 +22,8 @@ nconf.defaults({
     "http": {
         "port": 3001
     }
-});
+});  
+
 
 app.use(bodyParser.json());
 app.use(cors());

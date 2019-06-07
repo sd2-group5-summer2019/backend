@@ -5,7 +5,7 @@ class login {
         res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
         const { username, password } = req.body;
 
-        await sequelize.query(`SELECT * FROM users WHERE username = ? AND password = ?`, {replacements:[username, password], type: sequelize.QueryTypes.SELECT})
+        await sequelize.query(`CALL login(?,?)`, {replacements:[username, password], type: sequelize.QueryTypes.CALL})
             .then(result => {
                 if(result[0] !== undefined) {
                     if(result[0].username === username && result[0].password === password) {
