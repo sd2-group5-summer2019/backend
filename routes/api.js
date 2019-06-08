@@ -7,6 +7,7 @@ const studentController = require('../controllers/student');
 const registerController = require('../controllers/register');
 const getSurveyController = require('../controllers/getSurvey');
 const submitSurveyController = require('../controllers/submitSurvey');
+const surveyController = require('../controllers/survey');
 
 // Login routes
 router.post('/login', loginController.login);
@@ -19,7 +20,7 @@ router.get('/getStudentName', studentController.getStudentName);
 router.get('/getStudentID', studentController.getStudentID);
 
 // Taking survey routes.
-router.get('/getSurvey', getSurveyController.getSurvey);
-router.post('/submitSurvey', submitSurveyController.submitSurvey);
+router.get('/getSurvey', surveyController.getSurvey);
+router.post('/submitSurvey', surveyController.submitSurvey);
 
 module.exports = router;
