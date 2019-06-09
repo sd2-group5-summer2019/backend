@@ -5,9 +5,10 @@ const router = express.Router();
 const loginController = require('../controllers/login');
 const studentController = require('../controllers/student');
 const registerController = require('../controllers/register');
-const getSurveyController = require('../controllers/getSurvey');
-const submitSurveyController = require('../controllers/submitSurvey');
+//const getSurveyController = require('../controllers/getSurvey');
+//const submitSurveyController = require('../controllers/submitSurvey');
 const surveyController = require('../controllers/survey');
+const frontendTestController = require('../controllers/frontendTest');
 
 // Login routes
 router.post('/login', loginController.login);
@@ -22,5 +23,8 @@ router.get('/getStudentID', studentController.getStudentID);
 // Taking survey routes.
 router.get('/getSurvey', surveyController.getSurvey);
 router.post('/submitSurvey', surveyController.submitSurvey);
+
+// Testing for the frontend JSON.
+router.post('/frontendTest', frontendTestController.frontendTest);
 
 module.exports = router;
