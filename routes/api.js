@@ -13,7 +13,7 @@ const frontendTestController = require('../controllers/frontendTest');
 
 // Login routes
 router.post('/login', loginController.login);
-router.post('/login_secure', loginController.login_secure);
+router.post('/login_secure', requireAuth, loginController.login_secure);
 
 // Register routes.
 router.post('/register', registerController.register);
