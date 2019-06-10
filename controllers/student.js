@@ -4,7 +4,8 @@ const { sequelize } = require('../models');
 class studentInfo {
 
     static async getStudentName(req, res, next) {
-        res.send({ "name": "Spongebob Squarepants" });
+        console.log('InsideGetStudent');
+        res.json({ "name": "Squidward Tentacles" });
     }
 
     static async getStudentID(req, res, next) {
