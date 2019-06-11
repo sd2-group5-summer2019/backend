@@ -8,13 +8,25 @@ const requireAuth = passport.authenticate('jwt', { session: false });
 const loginController = require('../controllers/login');
 const studentController = require('../controllers/student');
 const registerController = require('../controllers/register');
+const surveyController = require('../controllers/survey');
+const frontendTestController = require('../controllers/frontendTest');
 
 // Login routes
 router.post('/login', loginController.login);
+router.post('/login_secure', requireAuth, loginController.login_secure);
+
+// Register routes.
 router.post('/register', registerController.register);
 
 // Get a student's information
 router.get('/getStudentName', requireAuth, studentController.getStudentName);
 router.get('/getStudentID', studentController.getStudentID);
+
+// Taking survey routes.
+router.get('/getSurvey', surveyController.getSurvey);
+router.post('/submitSurvey', surveyController.submitSurvey);
+
+// Testing for the frontend JSON.
+router.post('/frontendTest', frontendTestController.frontendTest);
 
 module.exports = router;

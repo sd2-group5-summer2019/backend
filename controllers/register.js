@@ -1,16 +1,22 @@
 const { sequelize } = require('../models');
+const bcrypt = require('bcrypt');
+const saltRounds = 10;
 
 class register {
     static async register(req, res, next) {
         res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
         const { username, password, type, first_name, last_name, email } = req.body;
 
-        await sequelize.query(`INSERT INTO users (username, password, type, first_name, last_name, email) VALUES (?,?,?,?,?,?);`, 
-        {replacements:[username, password, type, first_name, last_name, email], type: sequelize.QueryTypes.INSERT})
+        // Generate a salt and then hash the password
+        const salt = await bcrypt.genSalt(saltRounds);
+        const hash = await bcrypt.hash(password, salt);
+
+        // Insert into the DB but note that we are storing the hash instead of the plaintext password
+        await sequelize.query(`CALL register(?,?,?,?,?,?);`, 
+        {replacements:[username, hash, type, first_name, last_name, email], type: sequelize.QueryTypes.CALL})
             .then(result => {
-                // DB will return if insert was successful and how many rows were inserted.
-                if(result[0] === 0)                     
-                    res.send({ status: "Success" });
+                // DB will return if insert was successful and how many rows were inserted.                
+                res.send({ status: "Success" });
             }).catch(error => {
                 // If error occurs, DB will send back JSON with a lot of information.
                 // Thinking of adding more exceptions.
@@ -20,6 +26,7 @@ class register {
                 else
                     res.send({ status : "Unkonw error"});
             });
+        
     }
 }
 
