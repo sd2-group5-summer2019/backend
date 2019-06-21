@@ -1,26 +1,29 @@
 const nodemailer = require('nodemailer');
-const email = 'sd2group5@gmail.com';
-const pass = 'thatsnotmywallet!123';
+const config = require('../config/config');
 const sender = 'Spongebob Squarepants';
+const toEmail = 'sd2group5test@gmail.com';
+const subject = 'Test email';
+const body = 'Hello, there will be free krabby patties.'
 
-async function mailer() {
+async function mailer(toEmail, sender, subject, body) {
 
     let transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
-            user: email,
-            pass: pass
+            user: config.email,
+            pass: config.password
         }
     });
 
     let info = await transporter.sendMail({
-        from: `${sender} <${email}>`, 
-        to: 'testemail@example.com', 
-        subject: "Free Krabby Patties!!", 
-        text: "Hello, there will be free krabby patties.",
+        from: `${sender} <${config.email}>`, 
+        to: toEmail, 
+        subject: subject, 
+        text: body
     });
 
     console.log("Message sent: %s", info.messageId);
 }
 
-mailer().catch(console.error);
+// This is just for testing purposes
+// mailer(toEmail, sender, subject, body).catch(console.error);
