@@ -3,14 +3,13 @@ const { sequelize } = require('../models');
 // This class at the moment contains the basic API requests for each of the columns in the student table (currently just hardcoded JSON)
 class studentInfo {
 
-    static async getStudentName(req, res, next) {
-        console.log('InsideGetStudent');
-        res.json({ "name": "Squidward Tentacles" });
-    }
+    static async getAllStudents(req, res, next) {
+        res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
 
-    static async getStudentID(req, res, next) {
-        res.send({ "ID": "sp12345" });
-    }
+        await sequelize.query('CALL get_all_students();', {type: sequelize.QueryTypes.CALL})
+            .then(result => res.json(result))
+            .catch(error => next(error));            
+    }   
 }
 
 module.exports = studentInfo;

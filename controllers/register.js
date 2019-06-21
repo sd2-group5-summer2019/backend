@@ -12,7 +12,7 @@ class register {
         const hash = await bcrypt.hash(password, salt);
 
         // Insert into the DB but note that we are storing the hash instead of the plaintext password
-        await sequelize.query(`CALL register(?,?,?,?,?,?);`, 
+        await sequelize.query(`CALL insert_user(?,?,?,?,?,?);`, 
         {replacements:[username, hash, type, first_name, last_name, email], type: sequelize.QueryTypes.CALL})
             .then(result => {
                 // DB will return if insert was successful and how many rows were inserted.                
