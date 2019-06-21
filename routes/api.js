@@ -10,6 +10,7 @@ const studentController = require('../controllers/student');
 const registerController = require('../controllers/register');
 const surveyController = require('../controllers/survey');
 const teamController = require('../controllers/team');
+const sponsorController = require('../controllers/sponsor');
 const frontendTestController = require('../controllers/frontendTest');
 
 // Login routes
@@ -23,11 +24,14 @@ router.post('/register', registerController.register);
 router.post('/getAllStudents', studentController.getAllStudents);
 
 // Taking survey routes.
-router.get('/getSurvey', surveyController.getSurvey);
+router.post('/getSurvey', surveyController.getSurvey);
 router.post('/submitSurvey', surveyController.submitSurvey);
 
 // Team stuff
-router.get('/getAllTeams', teamController.getAllTeams);
+router.post('/getAllTeams', teamController.getAllTeams);
+
+// Sponsor stuff
+router.post('getAllSponsors', sponsorController.getAllSponsors);
 
 // Testing for the frontend JSON.
 router.post('/frontendTest', frontendTestController.frontendTest);
