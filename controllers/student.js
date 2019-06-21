@@ -8,7 +8,10 @@ class studentInfo {
 
         await sequelize.query('CALL get_all_students();', {type: sequelize.QueryTypes.CALL})
             .then(result => res.json(result))
-            .catch(error => next(error));            
+            .catch(error => {
+                console.log(error);
+                res.send({ status: "Request failed" });
+            });            
     }   
 }
 
