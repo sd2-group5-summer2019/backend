@@ -4,8 +4,22 @@ class form {
 
     static async createForm(req, res, next) {
 
-        if(type === 'survey') {
+        const { type, user_id, title, questions } = req.body;
+        let status = {};
 
+        if(type === 'survey') {
+            for(let i = 0; i < questions.length; i++) {
+                try {
+                    let insert = await sequelize.query('CALL insert_form(?,?,?,?)', {replacements:[ questions[i].question_text, title, type, user_id ], type: sequelize.QueryTypes.CALL})
+                    status.status = "Success"
+                    next;
+                } catch(error) {
+                    console.log(error);
+                    status.status = "Failed";
+                    next;
+                }
+            }
+            res.send(status);
         }
 
         if(type === 'quiz') {
@@ -46,7 +60,7 @@ class form {
             .catch(error => {
                 console.log(error);
                 res.send({ status: "Failed" });
-            }); 
+        }); 
     }
 
     static async submitForm(req, res, next) {
@@ -142,13 +156,14 @@ class form {
 
     static async getAnswers(req, res, next) {
 
-        const { user_id, form_id } = req.body;
+        const { userid, formid } = req.body;
+        console.log(userid);
         let type;
         let status = {};
         let answers;
 
         try {
-            let result = await sequelize.query('CALL get_form_type(?)', {replacements:[ form_id ], type: sequelize.QueryTypes.CALL});
+            let result = await sequelize.query('CALL get_form_type(?)', {replacements:[ formid ], type: sequelize.QueryTypes.CALL});
             type = result[0]['type'];
             console.log(type);
             status.status1 = "Success";
@@ -163,10 +178,10 @@ class form {
 
         if(type === 'survey') {
             try {
-                // CALL get_user_form_answers(?, ?)
+                // CALL get_user_form_answers(?)
                 answers = await sequelize.query(
                     'SELECT DISTINCT QUE.question_text, ANS.answer_text FROM form_answers ANS INNER JOIN form_questions QUE ON ANS.question_id = QUE.question_id WHERE ANS.user_id = ?', 
-                    {replacements:[ user_id ], type: sequelize.QueryTypes.SELECT});
+                    {replacements:[ userid ], type: sequelize.QueryTypes.SELECT});
                 status.status2 = "Success"    
                 next;
             } catch (error) {
