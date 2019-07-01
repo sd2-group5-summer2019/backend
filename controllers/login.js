@@ -25,11 +25,17 @@ async function comparePassword(inputPassword, dbHash, res) {
 }
 
 // ASYNC/AWAIT function to compare user input password vs the db hash (WITH TOKEN)
-async function comparePasswordSecure(inputPassword, dbHash, token, res) {
-    const match = await bcrypt.compare(inputPassword, dbHash)
+async function comparePasswordSecure(inputPassword, dbHash, result, token, res) {
+    const match = await bcrypt.compare(inputPassword, dbHash);
+    const user_id = result.user_id;
+    const type = result.type;
 
     if(match) {
-        res.send({ token });
+        res.send({ 
+            user_id: user_id,
+            type: type,
+            token: token
+        });
     } else {
         res.send({ status: "Failure: Incorrect Password" });
     }
@@ -67,7 +73,8 @@ class login {
                 if(result[0] !== undefined) {  
                     if (result[0]['username'] === username) {
                         // Compare user entered password to DB hashed password  
-                        comparePasswordSecure(password, result[0]['password'], token, res);  
+                        console.log(result);
+                        comparePasswordSecure(password, result[0]['password'], result[0], token, res);  
                     }
                 }
                 else {
