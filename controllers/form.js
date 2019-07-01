@@ -4,18 +4,39 @@ class form {
 
     static async createForm(req, res, next) {
 
-        const { type, user_id, title, questions } = req.body;
+        const { access_level, end_date, start_date, title, type, user_id, questions } = req.body;
+        let formID;
         let status = {};
+        // access_level = 'coordinator'
+        // type = 'survey';
+        let category_id = 1;
+        // start_date = '9999-11-12'
+        // end_date = '9999-12-24';
 
         if(type === 'survey') {
+
+            try {
+                formID = await sequelize.query(
+                    'CALL insert_form(?,?,?,?,?,?)', 
+                    {replacements:[ access_level, end_date, start_date, title, type, user_id ], type: sequelize.QueryTypes.CALL});
+                status.status1 = "Form Created";
+                next;
+            } catch(error) {
+                console.log(error);
+                status.status1 = "Failed";
+                next;
+            }
+
             for(let i = 0; i < questions.length; i++) {
                 try {
-                    let insert = await sequelize.query('CALL insert_form(?,?,?,?)', {replacements:[ questions[i].question_text, title, type, user_id ], type: sequelize.QueryTypes.CALL})
-                    status.status = "Success"
+                    let insert = await sequelize.query(
+                        'CALL insert_survey_question(?,?,?)', 
+                        {replacements:[ category_id, formID, questions[i].question ], type: sequelize.QueryTypes.CALL})
+                    status.status2 = "Survey Insert"
                     next;
                 } catch(error) {
                     console.log(error);
-                    status.status = "Failed";
+                    status.status2 = "Failed";
                     next;
                 }
             }
@@ -46,16 +67,17 @@ class form {
 
     static async getForm(req, res, next) {
 
-        const { form_id } = req.body;
+        const { formid } = req.body;
 
         // CALL getForm SP
-        await sequelize.query('CALL getForm(?)', {replacements:[ form_id ], type: sequelize.QueryTypes.CALL})
+        await sequelize.query(
+            'CALL get_form(?)', 
+            {replacements:[ formid ], type: sequelize.QueryTypes.CALL})
             .then(result => {
                 // Placeholder for now
-                console.log(result);
-
+                console.log(result[0]);
+                res.send({ result });
                 // We want to take the result and make the appropriate JSON to send back to the front end
-
             })
             .catch(error => {
                 console.log(error);
