@@ -13,7 +13,7 @@ class register {
 
         // Insert into the DB but note that we are storing the hash instead of the plaintext password
         await sequelize.query(`CALL insert_user(?,?,?,?,?,?);`, 
-        {replacements:[username, hash, type, first_name, last_name, email], type: sequelize.QueryTypes.CALL})
+        {replacements:[username, hash, type, last_name, first_name, email], type: sequelize.QueryTypes.CALL})
             .then(result => {
                 // DB will return if insert was successful and how many rows were inserted.                
                 res.send({ status: "Success" });
