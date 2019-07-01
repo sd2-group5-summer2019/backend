@@ -5,20 +5,25 @@ class form {
     static async createForm(req, res, next) {
 
         const { access_level, end_date, start_date, title, type, user_id, questions } = req.body;
-        let formID;
+        let returnFormID;
+        let form_id;
         let status = {};
         // access_level = 'coordinator'
         // type = 'survey';
         let category_id = 1;
         // start_date = '9999-11-12'
         // end_date = '9999-12-24';
+        console.log(questions.length);
 
         if(type === 'survey') {
 
             try {
-                formID = await sequelize.query(
+                returnFormID = await sequelize.query(
                     'CALL insert_form(?,?,?,?,?,?)', 
                     {replacements:[ access_level, end_date, start_date, title, type, user_id ], type: sequelize.QueryTypes.CALL});
+                // console.log(returnFormID[0]['LAST_INSERT_ID()']);
+                form_id = returnFormID[0]['LAST_INSERT_ID()'];
+                // console.log(form_id);
                 status.status1 = "Form Created";
                 next;
             } catch(error) {
@@ -29,9 +34,10 @@ class form {
 
             for(let i = 0; i < questions.length; i++) {
                 try {
+                    console.log(questions[i].question);
                     let insert = await sequelize.query(
                         'CALL insert_survey_question(?,?,?)', 
-                        {replacements:[ category_id, formID, questions[i].question ], type: sequelize.QueryTypes.CALL})
+                        {replacements:[ form_id, category_id, questions[i].question ], type: sequelize.QueryTypes.CALL})
                     status.status2 = "Survey Insert"
                     next;
                 } catch(error) {
