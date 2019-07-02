@@ -29,7 +29,7 @@ async function comparePasswordSecure(inputPassword, dbHash, result, token, res) 
     const match = await bcrypt.compare(inputPassword, dbHash);
     const user_id = result.user_id;
     const type = result.type;
-
+        console.log(type);
     if(match) {
         res.send({ 
             user_id: user_id,

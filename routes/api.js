@@ -25,7 +25,7 @@ router.post('/register', registerController.register);
 router.post('/getAllStudents', studentController.getAllStudents);
 
 // Taking survey routes.
-// router.post('/getSurvey', surveyController.getSurvey);
+ router.post('/getSurvey', surveyController.getSurvey);
 // router.post('/submitSurvey', surveyController.submitSurvey);
 
 // Team stuff
@@ -41,7 +41,7 @@ router.post('/updateForm', formController.updateForm);
 router.post('/submitForm', formController.submitForm);
 router.post('/deleteForm', formController.deleteForm);
 router.post('/getAnswers', formController.getAnswers);
-
+router.post('/getAllForms', formController.getAllForms)
 // Testing for the frontend JSON.
 router.post('/frontendTest', frontendTestController.frontendTest);
 

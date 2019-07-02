@@ -21,7 +21,7 @@ class form {
                 returnFormID = await sequelize.query(
                     'CALL insert_form(?,?,?,?,?,?)', 
                     {replacements:[ access_level, end_date, start_date, title, type, user_id ], type: sequelize.QueryTypes.CALL});
-                // console.log(returnFormID[0]['LAST_INSERT_ID()']);
+                 console.log(returnFormID[0]['LAST_INSERT_ID()']);
                 form_id = returnFormID[0]['LAST_INSERT_ID()'];
                 // console.log(form_id);
                 status.status1 = "Form Created";
@@ -73,16 +73,17 @@ class form {
 
     static async getForm(req, res, next) {
 
-        const { formid } = req.body;
+        const { form_id } = req.body;
 
         // CALL getForm SP
         await sequelize.query(
-            'CALL get_form(?)', 
-            {replacements:[ formid ], type: sequelize.QueryTypes.CALL})
+            'CALL get_survey(?)', 
+            {replacements:[ form_id ], type: sequelize.QueryTypes.CALL})
             .then(result => {
                 // Placeholder for now
-                console.log(result[0]);
-                res.send({ result });
+                // console.log(result[0]);
+                console.log(result);
+                res.send(result);
                 // We want to take the result and make the appropriate JSON to send back to the front end
             })
             .catch(error => {
@@ -222,6 +223,28 @@ class form {
         }
 
         res.send(answers);
+    }
+
+    static async getAllForms(req, res, next){
+
+            const { form_id } = req.body;
+    
+            // CALL getForm SP
+            await sequelize.query(
+                'CALL get_all_forms()', 
+                {type: sequelize.QueryTypes.CALL})
+                .then(result => {
+                    // Placeholder for now
+                    // console.log(result[0]);
+                    console.log(result);
+                    res.send(result);
+                    // We want to take the result and make the appropriate JSON to send back to the front end
+                })
+                .catch(error => {
+                    console.log(error);
+                    res.send({ status: "Failed" });
+            }); 
+        
     }
 
     static async deleteForm(req, res, next) {
