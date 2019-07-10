@@ -13,6 +13,7 @@ const teamController = require('../controllers/team');
 const sponsorController = require('../controllers/sponsor');
 const formController = require('../controllers/form');
 const frontendTestController = require('../controllers/frontendTest');
+const registerCSVController = require('../controllers/registerCSV');
 
 // Login routes
 router.post('/login', loginController.login);
@@ -39,10 +40,12 @@ router.post('/createForm', formController.createForm);
 router.post('/getForm', formController.getForm);
 router.post('/updateForm', formController.updateForm);
 router.post('/submitForm', formController.submitForm);
-router.post('/deleteForm', formController.deleteForm);
+//router.post('/deleteForm', formController.deleteForm);
 router.post('/getAnswers', formController.getAnswers);
-
+router.post('/assignForm', formController.assignForm);
 // Testing for the frontend JSON.
 router.post('/frontendTest', frontendTestController.frontendTest);
+
+router.post('/register_csv', registerCSVController.registercsv);
 
 module.exports = router;

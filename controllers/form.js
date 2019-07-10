@@ -224,34 +224,87 @@ class form {
         res.send(answers);
     }
 
-    static async deleteForm(req, res, next) {
+    
+ // This will be called to assign instances of a form to one of three choices.
+    // 1 = everyone in a course (sd1 : 'summer', year : 2019).
+    // 2 = groups, group IDs will be sent.
+    // 3 = individual users, list of users will be sent.
+    static async assignForm(req, res, next)
+    {
+        if(req.body.code === 1)
+        {
+            // Get all students who fit the current criteria.
+              const {form_id, start_date, end_date, sd1_term, sd1_year, sd2_term, sd2_year} = req.body;
+            // studentList= await sequelize.query('Select user_id FROM ((teams INNER JOIN students on students.team_id=teams.team_id) where teams.coordinator_id=1)
+            let studentList = await sequelize.query('CALL get_all_students_assign(?,?,?,?)', {replacements:[ sd1_term, sd1_year, sd2_term, sd2_year ], type: sequelize.QueryTypes.CALL});
+            if(studentList.length > 0)
+            {
+                // Loop through each student and assign the form instance.
+                for(let i = 0; i < studentList.length; i++)
+                {
+                    let insert_instance_result = await sequelize.query('CALL insert_form_instance(?,?,?,?)', {replacements:[ end_date, form_id, start_date, studentList[i].user_id ], type: sequelize.QueryTypes.CALL});
+                }
+            }
+            else
+            {
+                res.send({ Result : "No Students Found" });
+            }
 
-        if(type === 'survey') {
+            res.send({ status : "success" });
+        }
+        else if (req.body.code === 2)
+        {
+            const{form_id, start_date, end_date,teams}=req.body;
+            for (var i=0;i< teams.length;i++)
+            {
+                var idList = await sequelize.query('CALL get_team_info(?)', 
+                {replacements:[ teams[i] ], type: sequelize.QueryTypes.CALL});
+               
+                for(var j=0;j<idList.length;j++)
+                {
+                    
+                    var insert_result=await sequelize.query('CALL insert_form_instance(?,?,?,?)',
+                    {replacements:[ end_date, form_id, start_date, idList[j].user_id ], type: sequelize.QueryTypes.CALL});   
+                }
+            }
+            if(teams.length==0)
+            {
+                res.send({ status : "Teams not found" });
+
+            }
+  //        res.send({result : 2});
+            else
+                res.send({ status : "success" });
 
         }
-
-        if(type === 'quiz') {
-            
+        else if (req.body.code === 3)
+        {
+            const{form_id, start_date, end_date,students}=req.body;
+            for (var i=0;i< students.length;i++)
+            {
+                    var insert_result=await sequelize.query('CALL insert_form_instance(?,?,?,?)',
+                    {replacements:[ end_date, form_id, start_date, students[i] ], type: sequelize.QueryTypes.CALL});   
+                
+            }
+            if(students.length==0)
+            {
+                res.send({ status : "Students not found" });
+            }
+            else
+            {
+                res.send({ status : "success" });
+            }
         }
-
-        if(type === 'meeting') {
-            
+        else
+        {
+            res.send({ status :"No option chosen" });  
         }
-
-        if(type === 'task') {
-            
-        }
-
-        if(type === 'milestone') {
-            
-        }
-
-        if(type === 'attendance') {
-            
-        }
-
+//            res.send({result : 3});
+        
     }
-
+    async function  (req,res,next) {
+        
+    }
 }
 
 module.exports = form;

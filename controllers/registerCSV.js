@@ -3,25 +3,34 @@ const { sequelize } = require('../models');
 
 const parse = require('csv-parser');
 const uuid4 = require('uuid4');
-const config = require('../config/config');
+const fs=require('fs');
 class register_csv {
 	static async registercsv(req,res,next)
 	//async function parser(filepath)
 	{
 		const{ file,user_id }=req.body;
-		res={};
+		
+		if(file==undefined)
+		{
+			res.send({status:"No file inputted"});
+		}
 		var array=[];
 		var department_id;
-		var department=await sequelize.query(`Call get_coordinator_department(?)`,
+		/*var department=await sequelize.query(`Call get_coordinator_department(?)`,
 			{replacements:[user_id]
 			, type: sequelize.QueryTypes.CALL})
-			.then().catch(error => { res.send({ status : "Insertion Failure" }); 
+			.then().catch(error => { res.send({ status : "Retrieval Failure" }); 
 		});	
 		if (department[0]!=undefined)
 		{
 			department_id=department[0]['id'];
+		}*/
+		var stream = fs.createReadStream(file);
+		if(stream ==undefined)
+		{
+			res.send({ status : "Retrieval Failure" });
 		}
-		stream = fs.createReadStream(file);
+		
 		stream 
 		.pipe(parse())
 		.on('data', (row) => {
@@ -42,12 +51,12 @@ class register_csv {
 			(result => { res.send({ status : "Invalid email" })});
 		}	
 		var use = {
-			"nid":id.split('"').join(''),
+			"nid":nid.split('"').join(''),
 			"first_name" : f_name,
 			"last_name" : name[1],
 			"email":email.split('"').join('')
 			};
-			//Reject header
+		//Reject header
 		if (use.nid!="NID")
 			array.push(use);		
 		})
@@ -65,7 +74,6 @@ class register_csv {
 	
 }
 
-
 //Actual Insertion
 async function insert_students(arr)
 {
@@ -81,7 +89,7 @@ async function insert_students(arr)
 		});	
 		var id = results[0].user_id;
 		await sequelize.query('call insert_student(?,?,?,?,?,?,?)',
-			{replacements:[id,null,null,department_id ]
+			{replacements:[id,null,null,2,'fall',2020,'spring',2021 ]
 			, type: sequelize.QueryTypes.CALL})
 			.then(result => { res.send({ return : "Success" });
 			}).catch(error => { res.send({ status : "Insertion Failure" }); 
