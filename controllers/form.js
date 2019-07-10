@@ -4,23 +4,24 @@ class form {
 
     static async createForm(req, res, next) {
 
-        const { access_level, end_date, start_date, title, type, user_id, questions } = req.body;
+        const { access_level, description, title, type, user_id, questions } = req.body;
         let returnFormID;
         let form_id;
         let status = {};
-        // access_level = 'coordinator'
-        // type = 'survey';
         let category_id = 1;
-        // start_date = '9999-11-12'
-        // end_date = '9999-12-24';
+
+        //TODO Frontend needs to send the question type
+        let question_type = 'question'; 
+
+
         console.log(questions.length);
 
         if(type === 'survey') {
 
             try {
                 returnFormID = await sequelize.query(
-                    'CALL insert_form(?,?,?,?,?,?)', 
-                    {replacements:[ access_level, end_date, start_date, title, type, user_id ], type: sequelize.QueryTypes.CALL});
+                    'CALL insert_form(?,?,?,?,?)', 
+                    {replacements:[ access_level, description, title, type, user_id ], type: sequelize.QueryTypes.CALL});
                 // console.log(returnFormID[0]['LAST_INSERT_ID()']);
                 form_id = returnFormID[0]['LAST_INSERT_ID()'];
                 // console.log(form_id);
@@ -36,8 +37,8 @@ class form {
                 try {
                     console.log(questions[i].question);
                     let insert = await sequelize.query(
-                        'CALL insert_survey_question(?,?,?)', 
-                        {replacements:[ form_id, category_id, questions[i].question ], type: sequelize.QueryTypes.CALL})
+                        'CALL insert_survey_question(?,?,?,?)', 
+                        {replacements:[ form_id, category_id, questions[i].question, question_type ], type: sequelize.QueryTypes.CALL})
                     status.status2 = "Survey Insert"
                     next;
                 } catch(error) {
@@ -250,6 +251,43 @@ class form {
             
         }
 
+    }
+
+    // This will be called to assign instances of a form to one of three choices.
+    // 1 = everyone in a course (sd1 : 'summer', year : 2019).
+    // 2 = groups, group IDs will be sent.
+    // 3 = individual users, list of users will be sent.
+    static async assignForm(req, res, next)
+    {
+        if(req.body.code === 1)
+        {
+            // Get all students who fit the current criteria.
+            const {form_id, start_date, end_date, sd1_term, sd1_year, sd2_term, sd2_year} = req.body;
+
+            let studentList = await sequelize.query('CALL get_all_students_assign(?,?,?,?)', {replacements:[ sd1_term, sd1_year, sd2_term, sd2_year ], type: sequelize.QueryTypes.CALL});
+            if(studentList.length > 0)
+            {
+                // Loop through each student and assign the form instance.
+                for(let i = 0; i < studentList.length; i++)
+                {
+                    let insert_instance_result = await sequelize.query('CALL insert_form_instance(?,?,?,?)', {replacements:[ end_date, form_id, start_date, studentList[i].user_id ], type: sequelize.QueryTypes.CALL});
+                }
+            }
+            else
+            {
+                res.send({ Result : "No Students Found" });
+            }
+
+            res.send({ status : "success" });
+        }
+        else if (req.body.code === 2)
+        {
+            res.send({result : 2});
+        }
+        else if (req.body.code === 3)
+        {
+            res.send({result : 3});
+        }
     }
 
 }
