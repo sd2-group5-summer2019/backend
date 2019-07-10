@@ -302,9 +302,11 @@ class form {
 //            res.send({result : 3});
         
     }
-    async function  (req,res,next) {
-        
-    }
 }
-
+async function getActiveAssignments (req,res,next) {
+ const{user_id}=body;
+ assignments= await sequelize.query('select * from form_instances where user_id = ? and is_complete=0 and start_date > ?',
+ {replacements:[ user_id,date ], type: sequelize.QueryTypes.CALL});   
+res.send(JSON(result));
+}
 module.exports = form;
