@@ -84,6 +84,7 @@ class form {
                 console.log(result[0]);
                 res.send({ result });
                 // We want to take the result and make the appropriate JSON to send back to the front end
+          
             })
             .catch(error => {
                 console.log(error);
@@ -249,7 +250,7 @@ class form {
         if(req.body.code === 1)
         {
             // Get all students who fit the current criteria.
-              const {form_id, start_date, end_date, sd1_term, sd1_year, sd2_term, sd2_year} = req.body;
+            const {form_id, start_date, end_date, sd1_term, sd1_year, sd2_term, sd2_year} = req.body;
             // studentList= await sequelize.query('Select user_id FROM ((teams INNER JOIN students on students.team_id=teams.team_id) where teams.coordinator_id=1)
             let studentList = await sequelize.query('CALL get_all_students_assign(?,?,?,?)', {replacements:[ sd1_term, sd1_year, sd2_term, sd2_year ], type: sequelize.QueryTypes.CALL});
             if(studentList.length > 0)
@@ -272,14 +273,14 @@ class form {
             const{form_id, start_date, end_date,teams}=req.body;
             for (var i=0;i< teams.length;i++)
             {
-                var idList = await sequelize.query('CALL get_team_info(?)', 
+                var teamUsers = await sequelize.query('CALL get_users_in_team(?)', 
                 {replacements:[ teams[i] ], type: sequelize.QueryTypes.CALL});
                
-                for(var j=0;j<idList.length;j++)
+                for(var j=0;j<teamUsers.length;j++)
                 {
                     
                     var insert_result=await sequelize.query('CALL insert_form_instance(?,?,?,?)',
-                    {replacements:[ end_date, form_id, start_date, idList[j].user_id ], type: sequelize.QueryTypes.CALL});   
+                    {replacements:[ end_date, form_id, start_date, teamUsers[j].user_id ], type: sequelize.QueryTypes.CALL});   
                 }
             }
             if(teams.length==0)
