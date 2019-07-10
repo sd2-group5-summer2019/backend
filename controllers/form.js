@@ -299,8 +299,7 @@ class form {
         {
             res.send({ status :"No option chosen" });  
         }
-//            res.send({result : 3});
-        
+//            res.send({result : 3});    
     }
 }
 async function getActiveAssignments (req,res,next) {
