@@ -4,7 +4,7 @@ class form {
 
     static async createForm(req, res, next) {
 
-        const { access_level, end_date, start_date, title, type, user_id, questions } = req.body;
+        const { access_level, title, type, user_id, description, questions } = req.body;
         let returnFormID;
         let form_id;
         let status = {};
@@ -13,17 +13,17 @@ class form {
         let category_id = 1;
         // start_date = '9999-11-12'
         // end_date = '9999-12-24';
-        console.log(questions.length);
+        console.log(type);
 
         if(type === 'survey') {
 
             try {
                 returnFormID = await sequelize.query(
-                    'CALL insert_form(?,?,?,?,?,?)', 
-                    {replacements:[ access_level, end_date, start_date, title, type, user_id ], type: sequelize.QueryTypes.CALL});
+                    'CALL insert_form(?,?,?,?,?)', 
+                    {replacements:[ access_level, description, title, type, user_id], type: sequelize.QueryTypes.CALL});
                  console.log(returnFormID[0]['LAST_INSERT_ID()']);
                 form_id = returnFormID[0]['LAST_INSERT_ID()'];
-                // console.log(form_id);
+                 console.log(form_id);
                 status.status1 = "Form Created";
                 next;
             } catch(error) {
@@ -36,8 +36,8 @@ class form {
                 try {
                     console.log(questions[i].question);
                     let insert = await sequelize.query(
-                        'CALL insert_survey_question(?,?,?)', 
-                        {replacements:[ form_id, category_id, questions[i].question ], type: sequelize.QueryTypes.CALL})
+                        'CALL insert_survey_question(?,?,?, ?)', 
+                        {replacements:[ category_id, form_id, questions[i].question , questions[i].type], type: sequelize.QueryTypes.CALL})
                     status.status2 = "Survey Insert"
                     next;
                 } catch(error) {
@@ -46,7 +46,7 @@ class form {
                     next;
                 }
             }
-            res.send(status);
+            res.send({form_id});
         }
 
         if(type === 'quiz') {
@@ -67,6 +67,24 @@ class form {
 
         if(type === 'attendance') {
             
+        }
+
+    }
+
+    static async createFormInstance(req, res, next){
+        const {form_id, end_date, start_date, form_type, user_id} = req.body;
+
+        try {
+            returnInstanceID = await sequelize.query(
+                'CALL insert_form(?,?,?,?)', 
+                {replacements:[ end_date, form_id, start_date, '34'], type: sequelize.QueryTypes.CALL});
+            
+            status.status1 = "Assigned";
+            next;
+        } catch(error) {
+            console.log(error);
+            status.status1 = "Failed";
+            next;
         }
 
     }
@@ -230,10 +248,8 @@ class form {
             const { form_id } = req.body;
     
             // CALL getForm SP
-            await sequelize.query(
-                'CALL get_all_forms()', 
-                {type: sequelize.QueryTypes.CALL})
-                .then(result => {
+            await sequelize.query('CALL get_all_forms()', {type: sequelize.QueryTypes.CALL})
+            .then(result => {
                     // Placeholder for now
                     // console.log(result[0]);
                     console.log(result);
