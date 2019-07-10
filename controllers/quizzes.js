@@ -1,13 +1,12 @@
 const { sequelize } = require('../models');
 const config = require('../config/config');
-class quizzes
-{
-    static async quizGrader(req,res,next)
+
+    async function quizGrader(user_id,instance_id,responses)
     {
-        const {form_id,user_id,instance_id}=req.body;
+        
         var keys = await sequelize.query(
             'CALL get_quiz_key_answers(?)', 
-            {replacements:[ formid ], type: sequelize.QueryTypes.CALL})
+            {replacements:[ instance_id ], type: sequelize.QueryTypes.CALL})
             .then(result => {
                 // Placeholder for now
                 console.log(result[0]);
@@ -17,19 +16,7 @@ class quizzes
                 console.log(error);
                 res.send({ status: "Failed" });
         }); 
-        var responses = await sequelize.query(
-            'CALL get_user_survey_answers(?,?)', 
-            {replacements:[ form_id,user_id ], type: sequelize.QueryTypes.CALL})
-            .then(result => {
-                // Placeholder for now
-                console.log(result[0]);
-                res.send({ result });
-            })
-            .catch(error => {
-                console.log(error);
-                res.send({ status: "Failed" });
-        }); 
-        var a = quizzes.length;
+        var a = keys.length;
         var b = responses.length;
         for (var i=0;i=a;i++)
         {
@@ -67,7 +54,7 @@ class quizzes
                 res.send({ status: "Failed" });
         });
     }
-    static async questionTagResults (req,res,next)
+    async function questionTagResults (req,res,next)
     {
     //Get question with tag 
         const {category_id}=req.body;
@@ -94,7 +81,7 @@ class quizzes
         }
     }  
     //Get respons
-}
+
 
 //Calc results
 //Return results w/ average

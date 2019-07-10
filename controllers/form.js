@@ -133,7 +133,22 @@ class form {
         }
 
         if(type === 'quiz') {
-            
+            for(let i = 0; i < results.length; i++){
+                try {
+                    let callSurvey = await sequelize.query(`CALL submit_survey(?,?,?,?)`, 
+                        {replacements:[form_id, results[i].question_id, results[i].text, user_id], type: sequelize.QueryTypes.CALL});
+                    // res.send({ status: "Success" });
+                    console.log(`Insert ${results[i].question_id} and ${results[i].text}`);
+                    status.status2 = "Success"
+                    next;
+                } catch(error) {
+                    console.log(error);
+                    // res.send({ status: "Failed" });
+                    status.status3 = "Failed";
+                    next;
+                }
+            }
+            quizGrader(user_id,instance_id,results);
         }
 
         if(type === 'meeting') {
