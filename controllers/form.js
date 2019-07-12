@@ -318,13 +318,55 @@ class form {
         }
         else if (req.body.code === 2)
         {
-            res.send({result : 2});
+            const{form_id, start_date, end_date,teams}=req.body;
+            
+            for (var i=0;i< teams.length;i++)
+            {
+                var teamUsers = await sequelize.query('CALL get_users_in_team(?)', 
+                {replacements:[ teams[i].team_id ], type: sequelize.QueryTypes.CALL});
+               
+                for(var j=0;j<teamUsers.length;j++)
+                {
+                    
+                    var insert_result=await sequelize.query('CALL insert_form_instance(?,?,?,?)',
+                    {replacements:[ end_date, form_id, start_date, teamUsers[j].user_id ], type: sequelize.QueryTypes.CALL});   
+                }
+            }
+            if(teams.length==0)
+            {
+                res.send({ status : "Teams not found" });
+
+            }
+  //        res.send({result : 2});
+            else
+                res.send({ status : "success" });
+
         }
         else if (req.body.code === 3)
         {
-            res.send({result : 3});
+            const{form_id, start_date, end_date,students}=req.body;
+            for (var i=0;i< students.length;i++)
+            {
+                    var insert_result=await sequelize.query('CALL insert_form_instance(?,?,?,?)',
+                    {replacements:[ end_date, form_id, start_date, students[i].user_id ], type: sequelize.QueryTypes.CALL});   
+                
+            }
+            if(students.length==0)
+            {
+                res.send({ status : "Students not found" });
+            }
+            else
+            {
+                res.send({ status : "success" });
+            }
         }
+        else
+        {
+            res.send({ status :"No option chosen" });  
+        }
+//            res.send({result : 3});    
     }
+    
 
 }
 
