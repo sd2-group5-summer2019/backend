@@ -35,6 +35,7 @@ router.post('/getAllTeams', teamController.getAllTeams);
 router.post('/getAllSponsors', sponsorController.getAllSponsors);
 
 // Form
+router.post('/assignForm', formController.assignForm);
 router.post('/createForm', formController.createForm);
 router.post('/getForm', formController.getForm);
 router.post('/updateForm', formController.updateForm);
