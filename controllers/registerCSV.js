@@ -8,7 +8,7 @@ class register_csv {
 	static async registercsv(req,res,next)
 	//async function parser(filepath)
 	{
-		const{ file,user_id }=req.body;
+		const{ file }=req.body;
 		
 		if(file==undefined)
 		{
