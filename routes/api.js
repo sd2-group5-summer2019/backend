@@ -46,8 +46,10 @@ router.post('/assignForm', formController.assignForm);
 // Testing for the frontend JSON.
 router.post('/frontendTest', frontendTestController.frontendTest);
 
-const storage = multer.memoryStorage();
-const upload = multer({ storage });
+//const storage = multer.memoryStorage();
+//const upload = multer({ storage });
 router.post('/registerCSV', registerCSVController.registercsv,upload.single('myFile'));
+router.post('/groupregisterCSV', registerCSVController.registercsv,upload.single('myFile'));
+
 
 module.exports = router;

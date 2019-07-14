@@ -9,114 +9,180 @@ class register_csv {
 	static async registercsv(req,res,next)
 	//async function parser(filepath)
 	{
-		try {
-			
 			const {file} =req.body;
-			
 			console.log(file);
-			
-			var array=[];
 			var department_id;
-			fs.createReadStream(file)
-  .pipe(parse())
-  .on('data', (data) => results.push(data))
-  .on('end', () => {
-    console.log(results);
-    // [
-    //   { NAME: 'Daffy Duck', AGE: '24' },
-    //   { NAME: 'Bugs Bunny', AGE: '22' }
-    // ]
-  });
 			try {
-				//var stream = fs.createReadStream(file);
-				var stream=fs.createReadStream('C:\\Users\\Frant\\Downloads\\test_data.CSV');	
+				await studentparser(file);
 			} catch (error) {
 				//res.send({ status : "Retrieval Failure" });
 				console.log(error);
 				next;
 			}
-			try {
-				
-			 
-			stream 
-			.pipe(parse())
-			.on('data', (row) => {
-				console.log(data);
-			/*var user= JSON.stringify(row);
-			user.replace("\xFFFD", "").replace('"',);
-			
-			var split = user.split(",");
-			var name=split[1].split(" ");
-			var email = split[2].slice(split[2].indexOf(':"')+1).replace("}","");	
-			var nid=split[0].slice(split[0].indexOf(':"')+1);
-			var f_name=name[0].slice(name[0].indexOf(':"')+1).slice(1);
-			if(f_name =='' || name[1]=='' || email=='' || nid =='')
-			{
-				(result => { res.send({ status : "Values Missing" })});
-			}
-			if(!emailIsValid(email))
-			{
-				(result => { res.send({ status : "Invalid email" })});
-			}	
-			var use = {
-				"nid":nid.split('"').join(''),
-				"first_name" : f_name,
-				"last_name" : name[1],
-				"email":email.split('"').join('')
-				};
-			//Reject header
-			if (use.nid!="NID")
-				array.push(use);*/		
-			})
-			.on('end', () => {
-				
-				
-				
-			
-			});
-		
-		}catch (error) {
-		console.log(error);		
-		}
-			await insert_students(array);
-		}
-		catch (error) {
-		console.log(error);
-		next;	
-		}
-		// (result => { res.send({ status : "Sucessfull Request" })});
-		//console.log(array);
+		  res.send({ status : "Sucessfull Request" });
 	}
-	
-	
+	static groupregistercsv(req,res,next)
+	{
+		const {file,coordinator_id} =req.body;
+		console.log(file);
+		var department_id;
+		try {
+			await grouparser(file,coordinator_id);
+		} catch (error) {
+			//res.send({ status : "Retrieval Failure" });
+			console.log(error);
+			next;
+			}	
+	}
 }
 
 //Actual Insertion
 async function insert_students(arr)
 {
+	var id;
 	for (i=0;i<arr.length;i++)
 	{
-		var sql = `CALL insert_user (?,?,?,?,?,?)`;
-		await sequelize.query(sql,
-			{replacements:[arr[i].nid,uuid4(),`student`,arr[i].first_name,arr[i].last_name
-			,arr[i].email]})
-			/*, type: sequelize.QueryTypes.CALL})*/
-			.then(result => { res.send({ return : "Success" });
-			}).catch(error => { res.send({ status : "Insertion Failure" }); 
-		});	
-		var id = results[0].user_id;
-		await sequelize.query('call insert_student(?,?,?,?,?,?,?)',
-			{replacements:[id,null,null,2,'fall',2020,'spring',2021 ]
+		try {
+			var sql = `CALL insert_user (?,?,?,?,?,?)`;
+			var user =await sequelize.query(sql,
+				{replacements:[arr[i].nid,uuid4(),`student`,arr[i].last_name,
+				arr[i].first_name,arr[i].email],type: sequelize.QueryTypes.CALL})	
+			//console.log(arr[i].first_name+" has been inserted as a user");
+		} catch (error) {
+			//if already there reactivate
+			console.log(error);
+			//next;
+		}
+		try {
+			id=user[0]['last_insert_id()'];
+			var nStudent =await sequelize.query('call insert_student(?,?,?,?,?,?,?)',
+			{replacements:[2,'fall',2020,'spring',2021,null,id ]
 			, type: sequelize.QueryTypes.CALL})
-			.then(result => { res.send({ return : "Success" });
-			}).catch(error => { res.send({ status : "Insertion Failure" }); 
-		});
+			console.log(arr[i].first_name+ " has been registered");
+		} catch (error) {
+			console.log(error);
+//			next;
+		}
 	}
 }
+async function insert_teams(arr,id)
+{
+	
+	for (i=0;i<arr.length;i++)
+	{
+		try {
+			var sql = `CALL insert_team (?,?,?,?,?,?,?,?)`;
+			var team =await sequelize.query(sql,
+					{replacements:[id,arr[i].Description,arr[i].Number,arr[i].SD1_Term,
+					arr[i].SD1_Year,arr[i].SD2_Term,arr[i].SD2_Year,arr[i].Title],
+					type: sequelize.QueryTypes.CALL})	
+				//console.log(arr[i].first_name+" has been inserted as a user");
+			} catch (error) {
+				//if already there reactivate
+				console.log(error);
+				//next;
+			}
+			//ADvisor
+		try {
+			var team_id=team[0]['last_insert_id()'];
+			let user= sequelize.query(`CALL INSERT USER(?,?,?,?,?,?)`,
+				{replacements:[arr[i].AdvisorEmail.slice(0,indexof("@"-1)),uuid4(),'sponsor',
+				arr[i].Advisor.FirstName,arr[i].Advisor.Surname,arr[i].Advisor.Email],
+				type: sequelize.QueryTypes.CALL})
+			var uid= user[0]['last_insert_id()'];
+			let sql= `CALL insert_advisor(?,?)`;
+			let advisor =await sequelize.query(sql,
+				{replacements:[uid,team_id],
+				type: sequelize.QueryTypes.CALL})	
+			
+		} catch (error) {
+			console.log(error);
+//			next;
+		}
+		try {
+			let sql= `CALL insert_sponsor(?,?)`;
+			let sponsor =await sequelize.query(sql,
+				{replacements:[arr[i].Sponsor.company,arr[i].Sponsor.email],
+				type: sequelize.QueryTypes.CALL})	
+		} catch (error) {
+			console.log(error);
+		}
+	}
+}
+
 //Regular expression to validate emails	
 function emailIsValid (email) {
 		return /\S+@\S+\.\S+/.test(email)
 }
-//var arr=[];
+async function studentparser(file)
+{
+	var array=[];
+	file.replace("/","//")
+	console.log(file);
+	//var stream=;
+	fs.createReadStream(file)
+	.pipe(parse())
+	.on('data', function(data){
+			var name=data.Name.toString().split(" ");
+			//var f_name=name[0].slice(name[0].indexOf(':"')+1).slice(1);
+			if(name[0] =='' || name[1]=='' || data.Email=='' || data.NID =='')
+			{
+				(result => { res.send({ status : "Values Missing" })});
+			}
+			if(!emailIsValid(data.Email))
+			{
+				(result => { res.send({ status : "Invalid email" })});
+			}	
+			var user = {
+				"nid":data.NID,
+				"first_name" : name[0],
+				"last_name" : name[1],
+				"email":data.Email
+				};
+			//Reject header
+			array.push(user);
+	})
+	.on('end', function(data) {
+	  console.log(' done');
+	  //console.log(array);
+	  //insert_students(array);
+	});
+	return array;
+}
+async function teamparser(file,id)
+{
+	var array=[];
+	file.replace("/","//")
+	console.log(file);
+	//var stream=;
+	fs.createReadStream(file)
+	.pipe(parse())
+	.on('data', function(data){
+			var name=data.Name.toString().split(" ");
+			//var f_name=name[0].slice(name[0].indexOf(':"')+1).slice(1);
+			if(name[0] =='' || name[1]=='' || data.Email=='' || data.NID =='')
+			{
+				(result => { res.send({ status : "Values Missing" })});
+			}
+			if(!emailIsValid(data.Email))
+			{
+				(result => { res.send({ status : "Invalid email" })});
+			}	
+			var user = {
+				"nid":data.NID,
+				"first_name" : name[0],
+				"last_name" : name[1],
+				"email":data.Email
+				};
+			//Reject header
+			array.push(user);
+	})
+	.on('end', function(data) {
+	  console.log(' done');
+	  //console.log(array);
+	  //insert_students(array);
+	});
+	return array;
+}
 module.exports = register_csv;
-	  
+//studentparser('C:\\Users\\Frant\\Downloads\\test_data.CSV');
