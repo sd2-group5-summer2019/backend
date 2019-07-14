@@ -21,13 +21,13 @@ class register_csv {
 			}
 		  res.send({ status : "Sucessfull Request" });
 	}
-	static groupregistercsv(req,res,next)
+	static async teamregistercsv(req,res,next)
 	{
 		const {file,coordinator_id} =req.body;
 		console.log(file);
 		var department_id;
 		try {
-			await grouparser(file,coordinator_id);
+			await teamparser(file,coordinator_id);
 		} catch (error) {
 			//res.send({ status : "Retrieval Failure" });
 			console.log(error);
@@ -73,8 +73,8 @@ async function insert_teams(arr,id)
 		try {
 			var sql = `CALL insert_team (?,?,?,?,?,?,?,?)`;
 			var team =await sequelize.query(sql,
-					{replacements:[id,arr[i].Description,arr[i].Number,arr[i].SD1_Term,
-					arr[i].SD1_Year,arr[i].SD2_Term,arr[i].SD2_Year,arr[i].Title],
+					{replacements:[id,arr[i].description,arr[i].number,arr[i].SD1_Term,
+					arr[i].SD1_Year,arr[i].SD2_Term,arr[i].SD2_Year,arr[i].title],
 					type: sequelize.QueryTypes.CALL})	
 				//console.log(arr[i].first_name+" has been inserted as a user");
 			} catch (error) {
@@ -87,7 +87,7 @@ async function insert_teams(arr,id)
 			var team_id=team[0]['last_insert_id()'];
 			let user= sequelize.query(`CALL INSERT USER(?,?,?,?,?,?)`,
 				{replacements:[arr[i].AdvisorEmail.slice(0,indexof("@"-1)),uuid4(),'sponsor',
-				arr[i].Advisor.FirstName,arr[i].Advisor.Surname,arr[i].Advisor.Email],
+				arr[i].Advisor.FirstName,arr[i].Advisor.last_name,arr[i].Advisor.email],
 				type: sequelize.QueryTypes.CALL})
 			var uid= user[0]['last_insert_id()'];
 			let sql= `CALL insert_advisor(?,?)`;
@@ -158,24 +158,37 @@ async function teamparser(file,id)
 	fs.createReadStream(file)
 	.pipe(parse())
 	.on('data', function(data){
-			var name=data.Name.toString().split(" ");
-			//var f_name=name[0].slice(name[0].indexOf(':"')+1).slice(1);
-			if(name[0] =='' || name[1]=='' || data.Email=='' || data.NID =='')
-			{
-				(result => { res.send({ status : "Values Missing" })});
-			}
-			if(!emailIsValid(data.Email))
+			
+			if(!emailIsValid(data.AdvisorEmail)||!emailIsValid(data.SponsorEmail))
 			{
 				(result => { res.send({ status : "Invalid email" })});
 			}	
-			var user = {
-				"nid":data.NID,
-				"first_name" : name[0],
-				"last_name" : name[1],
-				"email":data.Email
-				};
+			if(data.Number==''||data.ProjectTitle==''||data.SD1==''||data.SD2=='')
+			{
+				(result => { res.send({ status : "Values Missing" })});
+			}	
+			var team = {
+				"number":data.Number,
+				"description":data.Description,
+				"SD1_Term":data.SD1.slice(0,data.SD1.toString().indexOf(" "-1)),
+				"SD1_Year":data.SD1.slice(data.SD1.toString().indexOf(" "+1),data.SD1.length),
+				"SD2_Term":data.SD2.slice(0,data.SD2.toString().indexOf(" "-1)),
+				"SD2_Year":data.SD2.slice(data.SD2.toString().indexOf(" "+1),data.SD1.length),
+				"title":data.ProjectTitle,
+				"Advisor":
+				{
+					"first_name":data.AdvisorName.slice(0,data.AdvisorName.toString().indexOf(" "-1)),
+					"last_name":data.AdvisorName.slice(data.AdvisorName.toString().indexOf(" ")+1,data.AdvisorName.length),
+					"email":data.AdvisorEmail
+				},
+				"Sponsor":
+				{
+					"company":data.SponsorCompany,
+					"email":data.SponsorEmail
+				},
+			};
 			//Reject header
-			array.push(user);
+			array.push(team);
 	})
 	.on('end', function(data) {
 	  console.log(' done');

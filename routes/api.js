@@ -48,8 +48,8 @@ router.post('/frontendTest', frontendTestController.frontendTest);
 
 //const storage = multer.memoryStorage();
 //const upload = multer({ storage });
-router.post('/registerCSV', registerCSVController.registercsv,upload.single('myFile'));
-router.post('/groupregisterCSV', registerCSVController.registercsv,upload.single('myFile'));
+router.post('/registerCSV', registerCSVController.registercsv/*,upload.single('myFile')*/);
+router.post('/teamregisterCSV', registerCSVController.teamregistercsv/*,upload.single('myFile')*/);
 
 
 module.exports = router;
