@@ -4,8 +4,8 @@ class form {
 
     static async createForm(req, res, next) {
 
-        // const for the form table.
-        const { access_level, title, type, user_id, description } = req.body;
+        // Check the form type.
+        const { type } = req.body;
 
         // insert_form will return the last form inserted.
         let returnFormID;
@@ -16,11 +16,9 @@ class form {
         let status = {};
         let category_id = 1;
 
-        
-
         if(type === 'survey') {
-            // const for survey.
-            const { questions } = req.body;
+            // const for survey and form.
+            const { access_level, title, user_id, description, questions } = req.body;
 
             // Insert the form.
             try {
@@ -61,8 +59,8 @@ class form {
         }
 
         if(type === 'meeting') {
-            // const for meeting.
-            const { team_id, start_date, end_date} = req.body;
+            // const for meeting and form.
+            const { access_level, title, user_id, description, team_id, start_date, end_date} = req.body;
 
             // Insert the form.
             try {
@@ -104,6 +102,18 @@ class form {
         }
 
         if(type === 'attendance') {
+            // Frontend should send instance_id, list of users with
+            // user_id, did_attend, and reason.
+            const {instance_id, users} = req.body;
+            try{
+                for(let i = 0; i < users.length; i++)
+                {
+                    let insert = await sequelize.query('CALL insert_form_attendance(?,?,?,?)', {replacements:[users[i].did_attend, instance_id, users[i].reason, users[i].user_id], type: sequelize.QueryTypes.CALL});
+                }                
+            }catch(error){
+                console.log(error);
+            }
+            res.send({status : "Attendance success"});
             
         }
 
@@ -288,6 +298,22 @@ class form {
             
         }
 
+    }
+
+    // Get instances that are assigned based on the user_id.
+    // This will also grab any instances assigned to the that user's team_id.
+    static async getInstances(req, res, next){
+        const { user_id } = req.body;
+        let instanceList;
+
+        try{
+            instanceList = await sequelize.query('CALL get_user_instances(?)', 
+            {replacements : [ user_id ], type : sequelize.QueryTypes.CALL});
+        }catch(error){
+            res.send({status : "Get Instances Failed"});
+        }
+
+        res.send(instanceList);
     }
 
 }
