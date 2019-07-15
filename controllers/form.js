@@ -308,7 +308,7 @@ class form {
                     next;
                 }
             }
-            quizGrader(user_id,instance_id,results);
+            quizGrader(user_id,form_id,results);
         }
 
         if(type === 'meeting') {

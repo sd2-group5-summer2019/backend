@@ -1,12 +1,14 @@
 const { sequelize } = require('../models');
 const config = require('../config/config');
+const dice = require('dice');
+const levenstein =require('levenstein');
 
     async function quizGrader(user_id,instance_id,responses)
     {
         
         var keys = await sequelize.query(
             'CALL get_quiz_key_answers(?)', 
-            {replacements:[ instance_id ], type: sequelize.QueryTypes.CALL})
+            {replacements:[ form_id ], type: sequelize.QueryTypes.CALL})
             .then(result => {
                 // Placeholder for now
                 console.log(result[0]);
@@ -20,7 +22,7 @@ const config = require('../config/config');
         var b = responses.length;
         for (var i=0;i=a;i++)
         {
-            for (var j=0;ij=b;j++)
+            for (var j=0;j=b;j++)
             {
                 if(responses[j].question_id>keys[i].question_id)
                 {
@@ -36,6 +38,15 @@ const config = require('../config/config');
                         break;
                     }
                     //Short answer - levenstein & dice coefficient
+                    if(keys[i].question_type=='fill_blank')
+                    {
+                        var r=dice(keys[i].key_text,responses[j].answer_text)
+                        var c=levenstein(keys[i].key_text,responses[j].answer_text)
+                        var p=c/keys[i].key_text.length;
+
+                    }
+                    
+
                     // Long answer - do nothing
                 }
     
