@@ -44,6 +44,7 @@ router.post('/submitForm', formController.submitForm);
 router.post('/getAnswers', formController.getAnswers);
 router.post('/assignForm', formController.assignForm);
 router.post('/getInstances', formController.getInstances);
+router.post('/assignForm', formController.assignForm);
 
 // Testing for the frontend JSON.
 router.post('/frontendTest', frontendTestController.frontendTest);
