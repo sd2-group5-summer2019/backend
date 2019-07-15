@@ -12,7 +12,7 @@ class form {
 
         // for the returned form_id after insert
         let form_id;
-        let instance_id;
+        var instance;
         let status = {};
         let category_id = 1;
 
@@ -127,44 +127,46 @@ class form {
         }
 
         if(type === 'task') {
+            
             // Insert the form.
-            const{access_level,description,end_date,milestone_id,owner_id,start_date,team_id,title,type,user_id}=req.body;
-            try {
-                returnFormID = await sequelize.query(
-                    'CALL insert_form(?,?,?,?,?)', 
-                    {replacements:[ access_level, description, title, type, user_id ], type: sequelize.QueryTypes.CALL});
-                // console.log(returnFormID[0]['LAST_INSERT_ID()']);
-                form_id = returnFormID[0]['LAST_INSERT_ID()'];
-                // console.log(form_id);
-                status.status1 = "Form Created";
-                next;
-             } catch(error) {
-                console.log(error);
-                status.status1 = "Failed";
-                next;
-             }
-             try{
-                let result = await sequelize.query('CALL insert_form_instance_user(?,?,?,?)', 
-                    {replacements:[end_date, form_id, start_date, user_id], type: sequelize.QueryTypes.CALL});
-                    instance_id = result[0]['LAST_INSERT_ID()'];
-                status.status2 = "Instance Created";
-                next;
-            }catch(error){
-                console.log(error);
-                status.status2 = "Instance Create Failed";
-                next;
-            }
-            try{
-                let result = await sequelize.query('CALL insert_form_task(?,?,?)', 
-                    {replacements:[user_id, form_id, milestone_id], type: sequelize.QueryTypes.CALL});
-                    instance_id = result[0]['LAST_INSERT_ID()'];
-                status.status2 = "Instance Created";
-                next;
-            }catch(error){
-                console.log(error);
-                status.status2 = "Instance Create Failed";
-                next;
-            }
+                const{access_level,description,end_date,milestone_id,owner_id,start_date,team_id,title,type,user_id}=req.body;
+                try {
+                    returnFormID = await sequelize.query(
+                        'CALL insert_form(?,?,?,?,?)', 
+                        {replacements:[ access_level, description, title, type, user_id ], type: sequelize.QueryTypes.CALL});
+                    // console.log(returnFormID[0]['LAST_INSERT_ID()']);
+                    form_id = returnFormID[0]['LAST_INSERT_ID()'];
+                    // console.log(form_id);
+                    status.status1 = "Form Created";
+                    
+                } catch(error) {
+                    console.log(error);
+                    status.status1 = "Failed";
+                    next;
+                }
+                try{
+                    var returnInstance = await sequelize.query('CALL insert_form_instance_user(?,?,?,?)', 
+                        {replacements:[end_date, form_id, start_date, user_id], type: sequelize.QueryTypes.CALL});
+                        instance = returnInstance[0]['LAST_INSERT_ID()'];
+                    status.status2 = "Instance Created";
+                    next;
+                }catch(error){
+                    console.log(error);
+                    status.status2 = "Instance Create Failed";
+                    next;
+                }
+                try{
+                    let result = await sequelize.query('CALL insert_form_task(?,?,?)', 
+                        {replacements:[user_id, instance/*returnInstance[0]['LAST_INSERT_ID()']*/, milestone_id], type: sequelize.QueryTypes.CALL});
+                        instance_id = result[0]['LAST_INSERT_ID()'];
+                    status.status2 = "Task Created";
+                    next;
+                }catch(error){
+                    console.log(error);
+                    status.status2 = "Task Create Failed";
+                    next;
+                }
+             
         }
 
         if(type === 'milestone') {
@@ -178,7 +180,7 @@ class form {
                 form_id = returnFormID[0]['LAST_INSERT_ID()'];
                 // console.log(form_id);
                 status.status1 = "Form Created";
-                next;
+                //next;
             } catch(error) {
                 console.log(error);
                 status.status1 = "Failed";
@@ -187,11 +189,11 @@ class form {
             //Assign to group
             // assign to the team_id, user_id for instance table will be null.
             try{
-                let returnInstance = await sequelize.query('CALL insert_form_instance_team(?,?,?,?)', 
+                var returnInstance = await sequelize.query('CALL insert_form_instance_team(?,?,?,?)', 
                     {replacements:[end_date, form_id, start_date, team_id], type: sequelize.QueryTypes.CALL});
                 status.status2 = "Instance Created";
-                instance_id = returnInstance[0]['LAST_INSERT_ID()'];
-                next;
+                instance = returnInstance[0]['LAST_INSERT_ID()'];
+                //next;
             }catch(error){
                 console.log(error);
                 status.status2 = "Instance Create Failed";
@@ -199,14 +201,14 @@ class form {
             }
             try{
                 let returnMilestone = await sequelize.query('CALL insert_form_milestone(?,?)', 
-                    {replacements:[form_id, team_id], type: sequelize.QueryTypes.CALL});
+                    {replacements:[returnInstance[0]['last_insert_id()'], team_id], type: sequelize.QueryTypes.CALL});
                 status.status2 = "Milestone Created";
-                //instance_id = returnInstance[0]['LAST_INSERT_ID()'];
-                next;
+                //next;
             }catch(error){
                 console.log(error);
                 status.status2 = "Milestone Create Failed";
                 next;
+                
             }
             res.send(status);
 
@@ -452,7 +454,7 @@ class form {
                     for(var j=0;j<teamUsers.length;j++)
                     {
                         
-                        var insert_result=await sequelize.query('CALL insert_form_instance(?,?,?,?)',
+                        var insert_result=await sequelize.query('CALL insert_form_instance_team(?,?,?,?)',
                         {replacements:[ end_date, form_id, start_date, teamUsers[j].user_id ], type: sequelize.QueryTypes.CALL});   
                     }
                 }
@@ -481,7 +483,7 @@ class form {
             {
                 for (var i=0;i< students.length;i++)
                 {
-                        var insert_result=await sequelize.query('CALL insert_form_instance(?,?,?,?)',
+                        var insert_result=await sequelize.query('CALL insert_form_instance_user(?,?,?,?)',
                         {replacements:[ end_date, form_id, start_date, students[i].user_id ], type: sequelize.QueryTypes.CALL});   
                     
                 }
