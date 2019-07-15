@@ -61,8 +61,8 @@ class form {
         if(type === 'quiz') {
             try {
                 returnFormID = await sequelize.query(
-                    'CALL insert_form(?,?,?,?)', 
-                    {replacements:[ access_level, title, type, user_id ], type: sequelize.QueryTypes.CALL});
+                    'CALL insert_form(?,?,?,?,?)', 
+                    {replacements:[ access_level, description, title, type, user_id ], type: sequelize.QueryTypes.CALL});
                 // console.log(returnFormID[0]['LAST_INSERT_ID()']);
                 form_id = returnFormID[0]['LAST_INSERT_ID()'];
                 // console.log(form_id);
@@ -73,29 +73,13 @@ class form {
                 status.status1 = "Failed";
                 next;
             }
-            try{
-                dummyInstance= await sequelize.query(
-                    'CALL insert_form_instance(?,?,?,?)',
-                {replacements:[end_date,form_id,start_date,null], type: sequelize.QueryTypes.CALL})
-                if(dummyInstance[0]==undefined)
-                {
-                    status.status2 = "Failed";
-                    next;
-                }
-                instance_id = dummyInstance[0]['LAST_INSERT_ID()'];
-                console.log(dummyInstance[0]['LAST_INSERT_ID()']);
-            }
-            catch(error) {
-                console.log(error);
-                status.status2 = "Dummy Failed";
-                next;
-            }
+            
             for(let i = 0; i < questions.length; i++) {
                 try {
                     
                     let insert = await sequelize.query(
                         'CALL insert_quiz_question(?,?,?,?)', 
-                        {replacements:[ category_id,instance_id , questions[i].question_text,questions[i].question_type ], type: sequelize.QueryTypes.CALL})
+                        {replacements:[ category_id, form_id , questions[i].question_text,questions[i].question_type ], type: sequelize.QueryTypes.CALL})
                     status.status2 = " Insert"
                     next;
                 } catch(error) {
