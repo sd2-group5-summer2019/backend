@@ -15,7 +15,7 @@ class register_csv {
 			try {
 				await studentparser(file);
 			} catch (error) {
-				//res.send({ status : "Retrieval Failure" });
+				res.send({ status : "Retrieval Failure" });
 				console.log(error);
 				next;
 			}
@@ -27,13 +27,18 @@ class register_csv {
 		console.log(file);
 		var department_id;
 		try {
-			await teamparser(file,coordinator_id);
+			
+			var arr=await teamparser(file,coordinator_id);
+			
 		} catch (error) {
-			//res.send({ status : "Retrieval Failure" });
+			res.send({ status : "Retrieval Failure" });
 			console.log(error);
 			next;
-			}	
+			}
+			res.send({ status : "Sucessfull Request" });
+	
 	}
+	
 }
 
 //Actual Insertion
@@ -65,14 +70,14 @@ async function insert_students(arr)
 		}
 	}
 }
-async function insert_teams(arr,id)
+async function insert_teams(arr,arr2,id)
 {
-	
+	var team;
 	for (i=0;i<arr.length;i++)
 	{
 		try {
 			var sql = `CALL insert_team (?,?,?,?,?,?,?,?)`;
-			var team =await sequelize.query(sql,
+			team =await sequelize.query(sql,
 					{replacements:[id,arr[i].description,arr[i].number,arr[i].SD1_Term,
 					arr[i].SD1_Year,arr[i].SD2_Term,arr[i].SD2_Year,arr[i].title],
 					type: sequelize.QueryTypes.CALL})	
@@ -84,15 +89,17 @@ async function insert_teams(arr,id)
 			}
 			//ADvisor
 		try {
-			var team_id=team[0]['last_insert_id()'];
-			let user= sequelize.query(`CALL INSERT USER(?,?,?,?,?,?)`,
-				{replacements:[arr[i].AdvisorEmail.slice(0,indexof("@"-1)),uuid4(),'sponsor',
-				arr[i].Advisor.FirstName,arr[i].Advisor.last_name,arr[i].Advisor.email],
+			//var team_id=team[0]['last_insert_id()'];
+			var team_id=arr[i].number;
+			var user= await sequelize.query(`CALL INSERT_USER(?,?,?,?,?,?)`,
+				{replacements:[arr[i].Advisor.email.slice(0,arr[i].Advisor.email.toString().indexOf("@")),
+				uuid4(),'sponsor',
+				arr[i].Advisor.first_name,arr[i].Advisor.last_name,arr[i].Advisor.email],
 				type: sequelize.QueryTypes.CALL})
 			var uid= user[0]['last_insert_id()'];
 			let sql= `CALL insert_advisor(?,?)`;
 			let advisor =await sequelize.query(sql,
-				{replacements:[uid,team_id],
+				{replacements:[team_id,uid],
 				type: sequelize.QueryTypes.CALL})	
 			
 		} catch (error) {
@@ -104,6 +111,29 @@ async function insert_teams(arr,id)
 			let sponsor =await sequelize.query(sql,
 				{replacements:[arr[i].Sponsor.company,arr[i].Sponsor.email],
 				type: sequelize.QueryTypes.CALL})	
+		} catch (error) {
+			console.log(error);
+		}
+	}
+	//Group Assigning
+	for (var j=0;j<arr2.length;j++)
+	{
+		try
+		{
+			try {
+				var result=await sequelize.query(`Select user_id from users where first_name= ? and last_name=?`,
+				{replacements:[arr2[j].first_name,arr2[j].last_name],type: sequelize.QueryTypes.CALL})
+			}catch(error)
+			{
+				console.log(error)
+			}
+			if(result[0][0]===undefined)
+			{
+				continue;
+			}
+		let sql=`CALL assign_to_team(?,?)`;
+		var results=await sequelize.query(sql,
+				{replacements:[arr2[j].team,result[0][0]['user_id']],type: sequelize.QueryTypes.CALL})	
 		} catch (error) {
 			console.log(error);
 		}
@@ -145,19 +175,46 @@ async function studentparser(file)
 	.on('end', function(data) {
 	  console.log(' done');
 	  //console.log(array);
-	  //insert_students(array);
+	  insert_students(array);
+	  //return array;
 	});
-	return array;
+	//return array;
 }
 async function teamparser(file,id)
 {
+	var students=[];
 	var array=[];
+	var switched=false;
 	file.replace("/","//")
 	console.log(file);
 	//var stream=;
 	fs.createReadStream(file)
 	.pipe(parse())
 	.on('data', function(data){
+		//console.log(data);
+		if(data.Number==""|| data.Number=="Primary")
+		{
+			switched=true;
+		//	console.log(switched);
+		}
+		if(switched)
+		{
+				if(data.Number!=undefined&&data.Number!=""&&data.Number!="Primary")
+			{
+				var student=
+				{
+					"first_name":data.Number,
+					"last_name":data.ProjectTitle,
+					"team":data.Description
+				}
+				students.push(student);
+			}
+		}
+		else
+		{
+			var SD1=data.SD1.split(" ");
+			var SD2=data.SD2.split(" ");
+			var Advisor=data.AdvisorName.split(" ");
 			
 			if(!emailIsValid(data.AdvisorEmail)||!emailIsValid(data.SponsorEmail))
 			{
@@ -166,19 +223,21 @@ async function teamparser(file,id)
 			if(data.Number==''||data.ProjectTitle==''||data.SD1==''||data.SD2=='')
 			{
 				(result => { res.send({ status : "Values Missing" })});
-			}	
+			}
+			
+				
 			var team = {
 				"number":data.Number,
-				"description":data.Description,
-				"SD1_Term":data.SD1.slice(0,data.SD1.toString().indexOf(" "-1)),
-				"SD1_Year":data.SD1.slice(data.SD1.toString().indexOf(" "+1),data.SD1.length),
-				"SD2_Term":data.SD2.slice(0,data.SD2.toString().indexOf(" "-1)),
-				"SD2_Year":data.SD2.slice(data.SD2.toString().indexOf(" "+1),data.SD1.length),
 				"title":data.ProjectTitle,
+				"description":data.Description,
+				"SD1_Term":SD1[0],
+				"SD1_Year":SD1[1],
+				"SD2_Term":SD2[0],
+				"SD2_Year":SD2[1],
 				"Advisor":
 				{
-					"first_name":data.AdvisorName.slice(0,data.AdvisorName.toString().indexOf(" "-1)),
-					"last_name":data.AdvisorName.slice(data.AdvisorName.toString().indexOf(" ")+1,data.AdvisorName.length),
+					"first_name":Advisor[0],
+					"last_name":Advisor[1],
 					"email":data.AdvisorEmail
 				},
 				"Sponsor":
@@ -189,11 +248,15 @@ async function teamparser(file,id)
 			};
 			//Reject header
 			array.push(team);
+		}
+		//console.log(team);
+		//console.log(student);
 	})
 	.on('end', function(data) {
-	  console.log(' done');
-	  //console.log(array);
-	  //insert_students(array);
+	  //console.log(' done');
+	 // console.log(students);
+	  insert_teams(array,students,id);
+	  //return array;
 	});
 	return array;
 }
