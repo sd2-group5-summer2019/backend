@@ -41,8 +41,8 @@ class form {
                 try {
                     console.log(questions[i].question);
                     let insert = await sequelize.query(
-                        'CALL insert_survey_question(?,?,?)', 
-                        {replacements:[ form_id, category_id, questions[i].question ], type: sequelize.QueryTypes.CALL})
+                        'CALL insert_survey_question(?,?,?,?)', 
+                        {replacements:[ form_id, category_id, questions[i].question, question_type ], type: sequelize.QueryTypes.CALL})
                     status.status2 = "Survey Insert"
                     next;
                 } catch(error) {
@@ -316,6 +316,136 @@ class form {
         res.send(instanceList);
     }
 
+    // This will be called to assign instances of a form to one of three choices.
+    // 1 = everyone in a course (sd1 : 'summer', year : 2019).
+    // 2 = groups, group IDs will be sent.
+    // 3 = individual users, list of users will be sent.
+    static async assignForm(req, res, next)
+    {
+        let status = {};
+        res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
+        if(req.body.code === 1)
+        {
+            let studentList;
+            // Get all students who fit the current criteria.
+            const {form_id, start_date, end_date, sd1_term, sd1_year, sd2_term, sd2_year} = req.body;
+            try {
+                studentList = await sequelize.query('CALL get_all_students_assign(?,?,?,?)', {replacements:[ sd1_term, sd1_year, sd2_term, sd2_year ], type: sequelize.QueryTypes.CALL});
+                next;
+            } catch (error) {
+                status.status1 = "Failed";
+                next;
+            }
+            if(studentList.length > 0)
+            {
+                // Loop through each student and assign the form instance.
+                for(let i = 0; i < studentList.length; i++)
+                {
+                    try {
+                    let insert_instance_result = await sequelize.query('CALL insert_form_instance(?,?,?,?)', {replacements:[ end_date, form_id, start_date, studentList[i].user_id ], type: sequelize.QueryTypes.CALL});
+                    next;
+                    } catch (error) {
+                        status.status1 = "Insertion Failed";
+                        next;   
+                    }
+                }
+            }
+            else
+            {
+                res.send({ Result : "No Students Found" });
+            }
+
+            res.send({ status : "success" });
+        }
+        
+        else if (req.body.code === 2)
+        {
+            const{end_date, form_id, start_date, teams} = req.body;
+            
+            // Check request for list of teams.
+            if(teams.length == 0)
+            {
+                res.send({ status : "No teams in Request Body" });
+            }
+
+            // loop through each team.
+            for (var i = 0; i < teams.length; i++)
+            {
+                // place holder for users of one team.
+                var teamUsers;
+
+                // get users from team.
+                try 
+                {
+                    teamUsers = await sequelize.query('CALL get_users_in_team(?)', 
+                        {replacements:[ teams[i].team_id ], type: sequelize.QueryTypes.CALL});
+                   
+                }
+                catch (error) 
+                {
+                    // Failed to get users of a team.
+                    status.status2 = "Could not get users in team.";
+                    res.send(status); 
+                    next;
+                }
+
+                // loop through each memeber of the team.
+                for(var j = 0; j < teamUsers.length; j++)
+                {
+                    try 
+                    {
+                        // insert the instance for the user.
+                        var insert_result = await sequelize.query('CALL insert_form_instance(?,?,?,?)',
+                            {replacements:[ end_date, form_id, start_date, teamUsers[j].user_id ], type: 
+                            sequelize.QueryTypes.CALL});
+                        next; 
+                    } 
+                    catch (error) 
+                    {
+                        // Failed to insert instance for user.
+                        status.status2 = "Insert Form Instance Failed";
+                        res.send(status); 
+                        next;
+                    }
+                          
+                }                
+            }          
+            res.send({status : "Success"});
+        }
+        // List of users given.
+        else if (req.body.code === 3)
+        {
+            const{ form_id, start_date, end_date, students } = req.body;
+
+            // check to see if list in populated.
+            if(students.length == 0)
+            {
+                res.send({ status : "Students not found" });
+            }
+            
+            // Loop through the list of users from the request body.
+            for (var i = 0; i < students.length; i++)
+            {
+                try {
+                    var insert_result = await sequelize.query('CALL insert_form_instance(?,?,?,?)',
+                        {replacements:[ end_date, form_id, start_date, students[i].user_id ],
+                        type: sequelize.QueryTypes.CALL});
+                    next;       
+                } catch (error) {
+                    status.status3 = "Insert Form Instance Failed";
+                    res.send(status); 
+                    next;       
+                }
+            }
+            
+            res.send({ status : "success" });
+        
+        }
+        else
+        {
+            res.send({ status :"No option chosen" });  
+        }
+    }
 }
 
 module.exports = form;
