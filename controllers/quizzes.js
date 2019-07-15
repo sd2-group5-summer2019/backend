@@ -5,19 +5,17 @@ const levenstein =require('levenstein');
 
     async function quizGrader(user_id,instance_id,responses)
     {
+        try {
+            var keys = await sequelize.query(
+                'CALL get_quiz_key_answers(?)', 
+                {replacements:[ form_id ], type: sequelize.QueryTypes.CALL}) 
+                next;   
+        } catch (error) {
+            console.log(error)
+            next;
+        }
         
-        var keys = await sequelize.query(
-            'CALL get_quiz_key_answers(?)', 
-            {replacements:[ form_id ], type: sequelize.QueryTypes.CALL})
-            .then(result => {
-                // Placeholder for now
-                console.log(result[0]);
-                res.send({ result });
-            })
-            .catch(error => {
-                console.log(error);
-                res.send({ status: "Failed" });
-        }); 
+            
         var a = keys.length;
         var b = responses.length;
         for (var i=0;i=a;i++)
@@ -55,15 +53,15 @@ const levenstein =require('levenstein');
     
         var grade=c/a*100;
         //Insert Grades
-        var responses = await sequelize.query(
-            'Update form_instances SET grade = ? where instance_id =?', 
-            {replacements:[ grade,instance_id ], type: sequelize.QueryTypes.Update})
-            .then(
-            )
-            .catch(error => {
-                console.log(error);
-                res.send({ status: "Failed" });
-        });
+        try {
+            var responses = await sequelize.query(
+                'Update form_instances SET grade = ? where instance_id =?', 
+                {replacements:[ grade,instance_id ], type: sequelize.QueryTypes.Update})
+                next;    
+        } catch (error) {
+            console.log(error);
+        }
+        
     }
     async function questionTagResults (req,res,next)
     {
