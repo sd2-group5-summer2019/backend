@@ -11,7 +11,7 @@ class form {
         let returnFormID;
 
         // for the returned form_id after insert
-        let form_id;
+        var form_id;
         var instance;
         let status = {};
         let category_id = 1;
@@ -59,7 +59,10 @@ class form {
         }
 
         if(type === 'quiz') {
+            const { access_level, title, user_id, description, questions } = req.body;
             try {
+                
+
                 returnFormID = await sequelize.query(
                     'CALL insert_form(?,?,?,?,?)', 
                     {replacements:[ access_level, description, title, type, user_id ], type: sequelize.QueryTypes.CALL});
@@ -76,11 +79,31 @@ class form {
             
             for(let i = 0; i < questions.length; i++) {
                 try {
-                    
-                    let insert = await sequelize.query(
-                        'CALL insert_quiz_question(?,?,?,?)', 
+                    category_id=questions[i].category_id;
+                    if(questions[i].category_id===undefined)
+                    {
+                        category_id=1;
+                    }
+                    var returnQuestionID = await sequelize.query(
+                        'CALL insert_form_question(?,?,?,?)', 
                         {replacements:[ category_id, form_id, questions[i].question_text, questions[i].question_type ], type: sequelize.QueryTypes.CALL})
-                    status.status2 = " Insert";
+                    var question_id=returnQuestionID[0]['last_insert_id()'];
+                        status.status2 = " Insert Question";
+                    next;
+                } catch(error) {
+                    console.log(error);
+                    status.status2 = "Failed";
+                    next;
+                }
+                try {
+                    if(questions[i].question_type != 'select'&&questions[i].question_type!='free_response')
+                    {
+                        let answer = await sequelize.query(
+                            'CALL insert_answer_key(?,?)', 
+                            {replacements:[ questions[i].answer_text,question_id ], type: sequelize.QueryTypes.CALL})
+                        status.status2 = " Insert";
+                        var question_id = returnQuestionID[0]['LAST_INSERT_ID()'];
+                    }
                     next;
                 } catch(error) {
                     console.log(error);
