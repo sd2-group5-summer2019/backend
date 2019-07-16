@@ -312,7 +312,7 @@ class form {
                     next;
                 } catch(error) {
                     console.log(error);
-                    status.status3 = "Question Insert Failed";
+                    status.status3 = "Question InsertFailed";
                     next;
                 }
             }
