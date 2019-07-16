@@ -94,7 +94,7 @@ async function insert_teams(arr,arr2,id)
 			var user= await sequelize.query(`CALL INSERT_USER(?,?,?,?,?,?)`,
 				{replacements:[arr[i].Advisor.email.slice(0,arr[i].Advisor.email.toString().indexOf("@")),
 				uuid4(),'sponsor',
-				arr[i].Advisor.first_name,arr[i].Advisor.last_name,arr[i].Advisor.email],
+				arr[i].Advisor.last_name,arr[i].Advisor.first_name,arr[i].Advisor.email],
 				type: sequelize.QueryTypes.CALL})
 			var uid= user[0]['last_insert_id()'];
 			let sql= `CALL insert_advisor(?,?)`;
@@ -258,10 +258,8 @@ async function teamparser(file,id)
 		//console.log(student);
 	})
 	.on('end', function(data) {
-	  //console.log(' done');
-	 // console.log(students);
+	  //insert teams and assign students
 	  insert_teams(array,students,id);
-	  //return array;
 	});
 	return array;
 }
