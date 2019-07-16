@@ -1,5 +1,6 @@
 const { sequelize } = require('../models');
-
+const quiz=require('./quizzes');
+console.log(quiz);
 class form {
 
     static async createForm(req, res, next) {
@@ -224,7 +225,7 @@ class form {
             }
             try{
                 let returnMilestone = await sequelize.query('CALL insert_form_milestone(?,?)', 
-                    {replacements:[returnInstance[0]['last_insert_id()'], team_id], type: sequelize.QueryTypes.CALL});
+                    {replacements:[instance, team_id], type: sequelize.QueryTypes.CALL});
                 status.status2 = "Milestone Created";
                 //next;
             }catch(error){
@@ -278,7 +279,7 @@ class form {
 
     static async submitForm(req, res, next) {
         
-        const { user_id, form_id , results } = req.body;
+        const { user_id, form_id,instance_id , results } = req.body;
         let type;
         let status = {};
 
@@ -321,7 +322,7 @@ class form {
             for(let i = 0; i < results.length; i++){
                 try {
                     let callSurvey = await sequelize.query(`CALL submit_survey(?,?,?,?)`, 
-                        {replacements:[form_id, results[i].question_id, results[i].text, user_id], type: sequelize.QueryTypes.CALL});
+                        {replacements:[results[i].text,instance_id, results[i].question_id, user_id], type: sequelize.QueryTypes.CALL});
                     // res.send({ status: "Success" });
                     console.log(`Insert ${results[i].question_id} and ${results[i].text}`);
                     status.status2 = "Success"

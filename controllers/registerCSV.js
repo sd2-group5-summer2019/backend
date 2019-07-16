@@ -131,9 +131,14 @@ async function insert_teams(arr,arr2,id)
 			{
 				continue;
 			}
-		let sql=`CALL assign_to_team(?,?)`;
+			let term1 = arr2[j].SD1.slice(0,arr2[j].SD1.indexOf(" ")+1);
+			let year1 = arr2[j].SD1.slice(arr2[j].SD1.indexOf(" ")+1,arr2[j].SD1.length);
+			let term2 = arr2[j].SD2.slice(0,arr2[j].SD1.indexOf(" ")+1);
+			let year2 = arr2[j].SD2.slice(arr2[j].SD1.indexOf(" ")+1,arr2[j].SD1.length);
+		let sql=`CALL assign_to_team(?,?,?,?)`;
 		var results=await sequelize.query(sql,
-				{replacements:[arr2[j].team,result[0][0]['user_id']],type: sequelize.QueryTypes.CALL})	
+				{replacements:[arr2[j].team,result[0][0]['user_id'],
+				arr[j].SD1_Term,arr[j].SD1_Year,arr[j].SD2_Term,arr[j].SD2_Year,year],type: sequelize.QueryTypes.CALL})	
 		} catch (error) {
 			console.log(error);
 		}
