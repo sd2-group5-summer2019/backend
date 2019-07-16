@@ -1,6 +1,9 @@
 const { sequelize } = require('../models');
 const {quiz}=require('./quizzes');
 
+const dice = require('dice-coefficient');
+const levenstein =require('js-levenshtein');
+
 class form {
 
     static async createForm(req, res, next) {
@@ -305,16 +308,14 @@ class form {
                         {replacements:[form_id, results[i].question_id, results[i].text, user_id], type: sequelize.QueryTypes.CALL});
                     // res.send({ status: "Success" });
                     console.log(`Insert ${results[i].question_id} and ${results[i].text}`);
-                    status.status2 = "Success"
+                    status.status2 = "Question Insert Success"
                     next;
                 } catch(error) {
                     console.log(error);
-                    // res.send({ status: "Failed" });
-                    status.status3 = "Failed";
+                    status.status3 = "Question Insert Failed";
                     next;
                 }
             }
-
             res.send(status);
         }
 
@@ -334,7 +335,9 @@ class form {
                     next;
                 }
             }
-            quizGrader(user_id,form_id,results);
+            //let grade=quizGrader(user_id,form_id,instance_id,results);
+            //res.send(grade);
+            res.send(200);
         }
 
         if(type === 'meeting') {
@@ -604,48 +607,28 @@ class form {
                 res.send({ status : "No teams in Request Body" });
             }
 
-            // loop through each team.
-            for (var i = 0; i < teams.length; i++)
+            // loop through each team
+            for(let j = 0; j < teams.length; j++)
             {
-                // place holder for users of one team.
-                var teamUsers;
-
-                // get users from team.
                 try 
                 {
-                    teamUsers = await sequelize.query('CALL get_users_in_team(?)', 
-                        {replacements:[ teams[i].team_id ], type: sequelize.QueryTypes.CALL});
-                   
-                }
+                    // insert the instance for the team.
+                    var insert_result = await sequelize.query('CALL insert_form_instance_team(?,?,?,?)',
+                        {replacements:[ end_date, form_id, start_date, teams[j].team_id ], type: 
+                        sequelize.QueryTypes.CALL});
+                        status.stauts2="Insert Form Instance Suceed"
+                    next; 
+                } 
                 catch (error) 
                 {
-                    // Failed to get users of a team.
-                    status.status2 = "Could not get users in team.";
-                    res.send(status); 
+                    // Failed to insert instance for team.
+                    status.status2 = "Insert Form Instance Failed";
+                    
                     next;
                 }
-
-                // loop through each memeber of the team.
-                for(var j = 0; j < teamUsers.length; j++)
-                {
-                    try 
-                    {
-                        // insert the instance for the user.
-                        var insert_result = await sequelize.query('CALL insert_form_instance(?,?,?,?)',
-                            {replacements:[ end_date, form_id, start_date, teamUsers[j].user_id ], type: 
-                            sequelize.QueryTypes.CALL});
-                        next; 
-                    } 
-                    catch (error) 
-                    {
-                        // Failed to insert instance for user.
-                        status.status2 = "Insert Form Instance Failed";
-                        res.send(status); 
-                        next;
-                    }
-                          
-                }                
-            }          
+                    
+            }                
+                      
             res.send({status : "Success"});
         }
         // List of users given.
@@ -683,4 +666,5 @@ class form {
         }
     }
 }
+
 module.exports = form;

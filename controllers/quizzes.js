@@ -6,64 +6,80 @@ class quizzes
 {
 
 }
-    async function quizGrader(user_id,instance_id,responses)
+async function quizGrader(user_id,form_id,instance_id,responses)
+{
+    try {
+        var keys = await sequelize.query(
+            'CALL get_quiz_key_answers(?)', 
+            {replacements:[ form_id ], type: sequelize.QueryTypes.CALL}) 
+            
+    } catch (error) {
+        console.log(error)
+        
+    }   
+    var a = keys.length;
+    var b = responses.length;
+    for (var i=0;i<a;i++)
     {
-        try {
-            var keys = await sequelize.query(
-                'CALL get_quiz_key_answers(?)', 
-                {replacements:[ form_id ], type: sequelize.QueryTypes.CALL}) 
-                next;   
-        } catch (error) {
-            console.log(error)
-            next;
-        }   
-        var a = keys.length;
-        var b = responses.length;
-        for (var i=0;i=a;i++)
+        for (var j=0;j<b;j++)
         {
-            for (var j=0;j=b;j++)
+            if(responses[j].question_id!=keys[i].question_id)
             {
-                if(responses[j].question_id>keys[i].question_id)
+                continue;
+            }
+            if(responses[j].question_id==keys[i].question_id)
+            {
+                //Based on question type
+                //Multi-Absolute Compare
+                switch (keys[i].question_type)
                 {
-                    break;
-                }
-                if(responses[j].question_id==keys[i].question_id)
-                {
-                    //Based on question type
-                    //Multi-Absolute Compare
-                    if(responses[j].answer_text==keys[i].key_text)
+                    case 'multiple_choice':
                     {
-                        c+=1;
+                        if(responses[j].answer_text==keys[i].key_text)
+                        {
+                            c+=1;
+                            break;
+                        }
+                    }
+                    case 'fill_blank':
+                    {
+                       
+                            var r=dice(keys[i].key_text,responses[j].text)
+                            var c=levenstein(keys[i].key_text,responses[j].text)
+                            var p=c/keys[i].key_text.length;
+                            if(r>.9||p>.75)
+                            {
+                                c+=1;
+                            }
+                        
                         break;
                     }
-                    //Short answer - levenstein & dice coefficient
-                    if(keys[i].question_type=='fill_blank')
+                    case 'select':
                     {
-                        var r=dice(keys[i].key_text,responses[j].answer_text)
-                        var c=levenstein(keys[i].key_text,responses[j].answer_text)
-                        var p=c/keys[i].key_text.length;
-
+                        break;
                     }
-                    
-
-                    // Long answer - do nothing
+                    default:
+                        break;
                 }
-    
+                
+                //Short answer - levenstein & dice coefficient
+               
+                // Long answer - do nothing
             }
         }
-    
-        var grade=c/a*100;
-        //Insert Grades
-        try {
-            var responses = await sequelize.query(
-                'Update form_instances SET grade = ? where instance_id =?', 
-                {replacements:[ grade,instance_id ], type: sequelize.QueryTypes.Update})
-                next;    
-        } catch (error) {
-            console.log(error);
-        }
-        
     }
+    let grade=c/a*100;
+    //Insert Grades
+    try {
+        var responses = await sequelize.query(
+            'Update form_instances SET grade = ? where instance_id =?', 
+            {replacements:[ grade,instance_id ], type: sequelize.QueryTypes.Update})
+             
+    } catch (error) {
+        console.log(error);
+    }
+    return grade;
+}
     async function questionTagResults (req,res,next)
     {
     //Get question with tag 
