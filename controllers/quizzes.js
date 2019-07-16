@@ -2,7 +2,10 @@ const { sequelize } = require('../models');
 const config = require('../config/config');
 const dice = require('dice-coefficient');
 const levenstein =require('js-levenshtein');
+class quizzes
+{
 
+}
     async function quizGrader(user_id,instance_id,responses)
     {
         try {
@@ -13,9 +16,7 @@ const levenstein =require('js-levenshtein');
         } catch (error) {
             console.log(error)
             next;
-        }
-        
-            
+        }   
         var a = keys.length;
         var b = responses.length;
         for (var i=0;i=a;i++)
@@ -96,5 +97,5 @@ const levenstein =require('js-levenshtein');
 //Return results w/ average
 //module.exports=quizzes;
 module.exports = 
-    quizGrader,questionTagResults;
+    quizzes;
    

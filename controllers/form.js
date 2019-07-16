@@ -1,6 +1,6 @@
 const { sequelize } = require('../models');
-const quiz=require('./quizzes');
-console.log(quiz);
+const {quiz}=require('./quizzes');
+
 class form {
 
     static async createForm(req, res, next) {
@@ -182,7 +182,7 @@ class form {
                 try{
                     let result = await sequelize.query('CALL insert_form_task(?,?,?)', 
                         {replacements:[user_id, instance/*returnInstance[0]['LAST_INSERT_ID()']*/, milestone_id], type: sequelize.QueryTypes.CALL});
-                        instance_id = result[0]['LAST_INSERT_ID()'];
+                      
                     status.status2 = "Task Created";
                     next;
                 }catch(error){
@@ -190,7 +190,7 @@ class form {
                     status.status2 = "Task Create Failed";
                     next;
                 }
-             
+             res.send(status);
         }
 
         if(type === 'milestone') {
