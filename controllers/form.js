@@ -1,9 +1,6 @@
 const { sequelize } = require('../models');
 const {quiz}=require('./quizzes');
 
-const dice = require('dice-coefficient');
-const levenstein =require('js-levenshtein');
-
 class form {
 
     static async createForm(req, res, next) {
@@ -103,8 +100,8 @@ class form {
                     if(questions[i].question_type != 'select'&&questions[i].question_type!='free_response')
                     {
                         let answer = await sequelize.query(
-                            'CALL insert_answer_key(?,?)', 
-                            {replacements:[ questions[i].answer_text,question_id ], type: sequelize.QueryTypes.CALL})
+                            'CALL insert_answer_key(?,?,?)', 
+                            {replacements:[ questions[i].answer_text,question_id,question[i].is_correct ], type: sequelize.QueryTypes.CALL})
                         status.status2 = " Insert";
                         var question_id = returnQuestionID[0]['LAST_INSERT_ID()'];
                     }
@@ -246,6 +243,8 @@ class form {
             // user_id, did_attend, and reason.
             const {instance_id, users} = req.body;
             try{
+                let meeting = await sequelize.query('CALL complete_meeting(?)',
+                 {replacements:[instance_id], type: sequelize.QueryTypes.CALL});
                 for(let i = 0; i < users.length; i++)
                 {
                     let insert = await sequelize.query('CALL insert_form_attendance(?,?,?,?)', {replacements:[users[i].did_attend, instance_id, users[i].reason, users[i].user_id], type: sequelize.QueryTypes.CALL});
@@ -312,7 +311,7 @@ class form {
                     next;
                 } catch(error) {
                     console.log(error);
-                    status.status3 = "Question InsertFailed";
+                    status.status3 = "Question Insert Failed";
                     next;
                 }
             }
@@ -340,10 +339,6 @@ class form {
             res.send(200);
         }
 
-        if(type === 'meeting') {
-            
-        }
-
         if(type === 'task') {
             
         }
@@ -352,14 +347,12 @@ class form {
             
         }
 
-        if(type === 'attendance') {
-            
-        }
+        
     
     }
 
     static async updateForm(req, res, next) {
-
+        //
         if(type === 'survey') {
 
         }
@@ -427,118 +420,34 @@ class form {
 
         res.send(answers);
     }
+    static async deleteForm(req, res, next) {
 
-    
- // This will be called to assign instances of a form to one of three choices.
-    // 1 = everyone in a course (sd1 : 'summer', year : 2019).
-    // 2 = groups, group IDs will be sent.
-    // 3 = individual users, list of users will be sent.
-    static async assignForm(req, res, next)
-    {
-        let status = {};
-        if(req.body.code === 1)
-        {
-            // Get all students who fit the current criteria.
-            const {form_id, start_date, end_date, sd1_term, sd1_year, sd2_term, sd2_year} = req.body;
-            // studentList= await sequelize.query('Select user_id FROM ((teams INNER JOIN students on students.team_id=teams.team_id) where teams.coordinator_id=1)
+        //Prevent deletetion of already respsonded to
+        if(type === 'survey') {
+
+        }
+
+        if(type === 'quiz') {
             
-            try{
-                let studentList = await sequelize.query('CALL get_all_students_assign(?,?,?,?)', {replacements:[ sd1_term, sd1_year, sd2_term, sd2_year ], type: sequelize.QueryTypes.CALL});
-                if(studentList.length > 0)
-                {
-                    // Loop through each student and assign the form instance.
-                    for(let i = 0; i < studentList.length; i++)
-                    {
-                        let insert_instance_result = await sequelize.query('CALL insert_form_instance(?,?,?,?)', {replacements:[ end_date, form_id, start_date, studentList[i].user_id ], type: sequelize.QueryTypes.CALL});
-                    }
-                }
-                else
-                {
-                    res.send({ Result : "No Students Found" });
-                }
-
-                res.send({ status : "success" });
-            }
-            catch
-            {
-                console.log(error);
-                // res.send({ status: "Failed" });
-                status.status2 = "Failed";
-                res.send(status);
-                next;
-            }
         }
-        else if (req.body.code === 2)
-        {
-            const{end_date, form_id, start_date,teams}=req.body;
-            try
-            {
-                for (var i=0;i< teams.length;i++)
-                {
-                    
-                
-                    
-                        
-                        var insert_result=await sequelize.query('CALL insert_form_instance_team(?,?,?,?)',
-                        {replacements:[ end_date, form_id, start_date, teams[i].user_id ], type: sequelize.QueryTypes.CALL});   
-                    
-                }
-                if(teams.length==0)
-                {
-                    res.send({ status : "Teams not found" });
 
-                }
-    //        res.send({result : 2});
-                else
-                    res.send({ status : "success" });
-            }
-            catch
-            {
-                
-                // res.send({ status: "Failed" });
-                status.status2 = "Failed";
-                res.send(status);
-                next;
-            }
-        }
-        else if (req.body.code === 3)
-        {
-            const{end_date,form_id, start_date ,students}=req.body;
-            try
-            {
-                for (var i=0;i< students.length;i++)
-                {
-                        var insert_result=await sequelize.query('CALL insert_form_instance_user(?,?,?,?)',
-                        {replacements:[ end_date, form_id, start_date, students[i].user_id ], type: sequelize.QueryTypes.CALL});   
-                    
-                }
-                if(students.length==0)
-                {
-                    res.send({ status : "Students not found" });
-                }
-                else
-                {
-                    res.send({ status : "success" });
-                }
-        
+        if(type === 'meeting') {
             
-            }
-//            res.send({result : 3});
-            catch
-            {
-            console.log(error);
-            // res.send({ status: "Failed" });
-            status.status2 = "Failed";
-            res.send(status);
-            next;
-            }
         }
-        else
-            {
-                res.send({ status :"No option chosen" });  
-            }
+
+        if(type === 'task') {
+            
+        }
+
+        if(type === 'milestone') {
+            
+        }
+
+        if(type === 'attendance') {
+            
+        }
+
     }
-
     // Get instances that are assigned based on the user_id.
     // This will also grab any instances assigned to the that user's team_id.
     static async getInstances(req, res, next){
