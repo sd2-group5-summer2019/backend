@@ -490,7 +490,7 @@ class form {
                 for(let i = 0; i < studentList.length; i++)
                 {
                     try {
-                    let insert_instance_result = await sequelize.query('CALL insert_form_instance(?,?,?,?)', {replacements:[ end_date, form_id, start_date, studentList[i].user_id ], type: sequelize.QueryTypes.CALL});
+                    let insert_instance_result = await sequelize.query('CALL insert_form_instance_user(?,?,?,?)', {replacements:[ end_date, form_id, start_date, studentList[i].user_id ], type: sequelize.QueryTypes.CALL});
                     next;
                     } catch (error) {
                         status.status1 = "Insertion Failed";
@@ -535,9 +535,34 @@ class form {
                     
                     next;
                 }
+<<<<<<< HEAD
                     
             }                
                       
+=======
+
+                // loop through each memeber of the team.
+                for(var j = 0; j < teamUsers.length; j++)
+                {
+                    try 
+                    {
+                        // insert the instance for the user.
+                        var insert_result = await sequelize.query('CALL insert_form_instance_user(?,?,?,?)',
+                            {replacements:[ end_date, form_id, start_date, teamUsers[j].user_id ], type: 
+                            sequelize.QueryTypes.CALL});
+                        next; 
+                    } 
+                    catch (error) 
+                    {
+                        // Failed to insert instance for user.
+                        status.status2 = "Insert Form Instance Failed";
+                        res.send(status); 
+                        next;
+                    }
+                          
+                }                
+            }          
+>>>>>>> 1a31fb33934695af8fee5f2462646914f55f6f0a
             res.send({status : "Success"});
         }
         // List of users given.
@@ -555,7 +580,7 @@ class form {
             for (var i = 0; i < students.length; i++)
             {
                 try {
-                    var insert_result = await sequelize.query('CALL insert_form_instance(?,?,?,?)',
+                    var insert_result = await sequelize.query('CALL insert_form_instance_user(?,?,?,?)',
                         {replacements:[ end_date, form_id, start_date, students[i].user_id ],
                         type: sequelize.QueryTypes.CALL});
                     next;       
