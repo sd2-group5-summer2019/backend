@@ -2,7 +2,7 @@ const { sequelize } = require('../models');
 const bcrypt = require('bcrypt');
 const uuid = require('uuidv4');
 const mail = require('./mailer');
-const verifyStudentEmail = require('../models/email/verifyStudentEmail');
+const verifyStudent = require('../models/verifyStudentEmail');
 const saltRounds = 10;
 
 class register {
