@@ -2,11 +2,8 @@ const { sequelize } = require('../models');
 const config = require('../config/config');
 const dice = require('dice-coefficient');
 const levenstein =require('js-levenshtein');
-class quizzes
-{
 
-}
-async function quizGrader(user_id,form_id,instance_id,responses)
+export async function quizGrader(user_id,form_id,instance_id,responses)
 {
     try {
         var keys = await sequelize.query(
@@ -19,14 +16,10 @@ async function quizGrader(user_id,form_id,instance_id,responses)
     }   
     var a = keys.length;
     var b = responses.length;
-    for (var i=0;i<a;i++)
+    for (let i=0;i<a;i++)
     {
-        for (var j=0;j<b;j++)
+        for (let j=0;j<b;j++)
         {
-            if(responses[j].question_id!=keys[i].question_id)
-            {
-                continue;
-            }
             if(responses[j].question_id==keys[i].question_id)
             {
                 //Based on question type
@@ -72,7 +65,7 @@ async function quizGrader(user_id,form_id,instance_id,responses)
     //Insert Grades
     try {
         var responses = await sequelize.query(
-            'Update form_instances SET grade = ? where instance_id =?', 
+            'Update form_instances SET grade = ? ,is_complete = 1 where instance_id =?', 
             {replacements:[ grade,instance_id ], type: sequelize.QueryTypes.Update})
              
     } catch (error) {
@@ -112,6 +105,5 @@ async function quizGrader(user_id,form_id,instance_id,responses)
 //Calc results
 //Return results w/ average
 //module.exports=quizzes;
-module.exports = 
-    quizzes;
+module.exports =     quizzes;
    
