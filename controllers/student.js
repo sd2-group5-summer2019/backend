@@ -8,9 +8,9 @@ class studentInfo {
         // Get all students based on user type.
         // Return the first, last, and user_id.
 
-        const { type } = req.body;
+        const { type, user_id } = req.body;
 
-        if(type == 'coordinator')
+        if(type === 'coordinator')
         {
             try
             {
@@ -26,7 +26,7 @@ class studentInfo {
             }
         }
 
-        if(type == 'advisor')
+        if(type === 'advisor')
         {
             try
             {

@@ -18,16 +18,18 @@ class form {
 
         if(type === 'survey') {
             // const for survey and form.
-            const { access_level, title, user_id, description, questions,form_threshold } = req.body;
-            if(form_threshold===undefined)
-            {
-                form_threshold=null;
-            }
+            const { access_level, title, user_id, description, questions, form_threshold } = req.body;
+
+            console.log(questions[0]);
+            // if(form_threshold===undefined)
+            // {
+            //     form_threshold=null;
+            // }
             // Insert the form.
             try {
                 returnFormID = await sequelize.query(
                     'CALL insert_form(?,?,?,?,?,?)', 
-                    {replacements:[ access_level, description, title, type, user_id, form_threshold], type: sequelize.QueryTypes.CALL});
+                    {replacements:[ access_level, description, title, form_threshold, type, user_id], type: sequelize.QueryTypes.CALL});
                 // console.log(returnFormID[0]['LAST_INSERT_ID()']);
                 form_id = returnFormID[0]['LAST_INSERT_ID()'];
                  console.log(form_id);
@@ -40,7 +42,7 @@ class form {
             }
 
             // Insert the questions for the new form.
-            for(let i = 0; i < questions.length; i++) {
+            for(let i = 0; i < questions.length ; i++) {
                 try {
                     console.log(questions[i].question);
                     if(category_id===undefined)
@@ -53,7 +55,7 @@ class form {
                     }
                     let insert = await sequelize.query(
                         'CALL insert_form_question(?,?,?,?,?)', 
-                        {replacements:[ category_id,form_id, questions[i].question_text,questions[i].question_type,questions[i].question_threshold ], type: sequelize.QueryTypes.CALL})
+                        {replacements:[ category_id, form_id, questions[i].question_text, questions[i].question_type, questions[i].question_threshold ], type: sequelize.QueryTypes.CALL})
                     status.status3 = "Question Insert"
                     next;
                 } catch(error) {
@@ -68,14 +70,14 @@ class form {
         if(type === 'quiz') {
             const { access_level, title, user_id, description, questions, form_threshold } = req.body;
             try {
-                if(form_threshold===undefined)
-                {
-                    form_threshold=null;
-                }
+                // if(form_threshold===undefined)
+                // {
+                //     form_threshold=null;
+                // }
 
                 returnFormID = await sequelize.query(
                     'CALL insert_form(?,?,?,?,?,?)', 
-                    {replacements:[ access_level, description, title, type, user_id, form_threshold], type: sequelize.QueryTypes.CALL});
+                    {replacements:[ access_level, description, title, form_threshold, type, user_id], type: sequelize.QueryTypes.CALL});
                 // console.log(returnFormID[0]['LAST_INSERT_ID()']);
                 form_id = returnFormID[0]['LAST_INSERT_ID()'];
                 // console.log(form_id);
@@ -100,7 +102,7 @@ class form {
                     }
                     var returnQuestionID = await sequelize.query(
                         'CALL insert_form_question(?,?,?,?,?)', 
-                        {replacements:[ category_id, form_id, questions[i].question_text, questions[i].question_type,questions[i].question_threshold ], type: sequelize.QueryTypes.CALL})
+                        {replacements:[ category_id, form_id, questions[i].question_text, questions[i].question_type, questions[i].question_threshold ], type: sequelize.QueryTypes.CALL})
                     var question_id=returnQuestionID[0]['LAST_INSERT_ID()'];
                         status.status2 = " Insert Question";
                     
@@ -126,7 +128,7 @@ class form {
                     
                  
             }
-            res.send(status);
+            res.send({'status':status, 'form_id':form_id});
         }
 
         if(type === 'meeting') {
@@ -308,7 +310,7 @@ class form {
 
         // CALL getForm SP
         await sequelize.query(
-            'CALL get_form(?)', 
+            'CALL get_survey(?)', 
             {replacements:[ form_id ], type: sequelize.QueryTypes.CALL})
             .then(result => {
                 // Placeholder for now
@@ -325,7 +327,7 @@ class form {
 
     static async submitForm(req, res, next) {
         
-        const { user_id, form_id , results } = req.body;
+        const { user_id, form_id , instance_id, results } = req.body;
         let type;
         let status = {};
 
@@ -347,8 +349,8 @@ class form {
 
             for(let i = 0; i < results.length; i++){
                 try {
-                    let callSurvey = await sequelize.query(`CALL submit_survey(?,?,?,?)`, 
-                        {replacements:[form_id, results[i].question_id, results[i].text, user_id], type: sequelize.QueryTypes.CALL});
+                    let callSurvey = await sequelize.query(`CALL insert_form_answer(?,?, ?,?)`, 
+                        {replacements:[instance_id, results[i].question_id, results[i].text, user_id], type: sequelize.QueryTypes.CALL});
                     // res.send({ status: "Success" });
                     console.log(`Insert ${results[i].question_id} and ${results[i].text}`);
                     status.status2 = "Success"
@@ -367,7 +369,7 @@ class form {
         if(type === 'quiz') {
             for(let i = 0; i < results.length; i++){
                 try {
-                    let callSurvey = await sequelize.query(`CALL submit_survey(?,?,?,?)`, 
+                    let callSurvey = await sequelize.query(`CALL insert_form_answer(?,?,?,?)`, 
                         {replacements:[results[i].text,instance_id, results[i].question_id, user_id], type: sequelize.QueryTypes.CALL});
                     // res.send({ status: "Success" });
                     console.log(`Insert ${results[i].question_id} and ${results[i].text}`);
