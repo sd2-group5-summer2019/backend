@@ -141,7 +141,7 @@ class form {
                 }
                 returnFormID = await sequelize.query(
                     'CALL insert_form(?,?,?,?,?,?)', 
-                    {replacements:[ access_level, description, title, type, user_id,form_threshold ], type: sequelize.QueryTypes.CALL});
+                    {replacements:[ access_level, description, title, type, user_id, form_threshold ], type: sequelize.QueryTypes.CALL});
                 // console.log(returnFormID[0]['LAST_INSERT_ID()']);
                 form_id = returnFormID[0]['LAST_INSERT_ID()'];
                 // console.log(form_id);
@@ -171,7 +171,7 @@ class form {
         if(type === 'task') {
             
             // Insert the form.
-                const{access_level,description,end_date,milestone_id,owner_id,start_date,team_id,title,type,user_id}=req.body;
+                const{ access_level, description, end_date, milestone_id, owner_id, start_date, team_id, title, type, user_id} = req.body;
                 try {
                     if(form_threshold===undefined)
                 {
@@ -179,7 +179,7 @@ class form {
                 }
                     returnFormID = await sequelize.query(
                         'CALL insert_form(?,?,?,?,?,?)', 
-                        {replacements:[ access_level, description, title, type, user_id ], type: sequelize.QueryTypes.CALL});
+                        {replacements:[ access_level, description, title, type, user_id, null ], type: sequelize.QueryTypes.CALL});
                     // console.log(returnFormID[0]['LAST_INSERT_ID()']);
                     form_id = returnFormID[0]['LAST_INSERT_ID()'];
                     // console.log(form_id);
@@ -217,7 +217,7 @@ class form {
 
         if(type === 'milestone') {
             // Insert the form.
-            const{access_level,description,end_date,start_date,team_id,title,type,user_id}=req.body;
+            const{ access_level, description, end_date, start_date, team_id, title, type, user_id } = req.body;
             if(form_threshold===undefined)
             {
                     form_threshold=null;
@@ -225,7 +225,7 @@ class form {
             try {
                 returnFormID = await sequelize.query(
                     'CALL insert_form(?,?,?,?,?,?)', 
-                    {replacements:[ access_level, description, title, type, user_id ], type: sequelize.QueryTypes.CALL});
+                    {replacements:[ access_level, description, title, type, user_id, null ], type: sequelize.QueryTypes.CALL});
                 // console.log(returnFormID[0]['LAST_INSERT_ID()']);
                 form_id = returnFormID[0]['LAST_INSERT_ID()'];
                 // console.log(form_id);
@@ -285,12 +285,13 @@ class form {
     }
 
     static async createFormInstance(req, res, next){
+        /*
         const {form_id, end_date, start_date, form_type, user_id} = req.body;
 
         try {
             returnInstanceID = await sequelize.query(
-                'CALL insert_form(?,?,?,?)', 
-                {replacements:[ end_date, form_id, start_date, '34'], type: sequelize.QueryTypes.CALL});
+                'CALL insert_form(?,?,?,?,?,?)', 
+                {replacements:[ end_date, form_id, start_date, user_id], type: sequelize.QueryTypes.CALL});
             
             status.status1 = "Assigned";
             next;
@@ -299,6 +300,7 @@ class form {
             status.status1 = "Failed";
             next;
         }
+        */
 
     }
 
@@ -533,39 +535,11 @@ class form {
         }
 
     }
- 
 
-    static async deleteForm(req, res, next) {
-
-        //Prevent deletetion of forms with alredy created instances
-        if(type === 'survey') {
-
-        }
-
-        if(type === 'quiz') {
-            
-        }
-
-        if(type === 'meeting') {
-            
-        }
-
-        if(type === 'task') {
-            
-        }
-
-        if(type === 'milestone') {
-            
-        }
-
-        if(type === 'attendance') {
-            
-        }
-
-    }
     // Get instances that are assigned based on the user_id.
     // This will also grab any instances assigned to the that user's team_id.
     static async getInstances(req, res, next){
+
         const { user_id } = req.body;
         let instanceList;
 
@@ -713,6 +687,7 @@ class form {
         }
     }
 }
+
 async function quizGrader(user_id,form_id,instance_id,responses)
 {
     try {
