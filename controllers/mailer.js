@@ -1,28 +1,50 @@
 const nodemailer = require('nodemailer');
 const config = require('../config/config');
-const sender = 'Spongebob Squarepants';
-const toEmail = 'sd2group5test@gmail.com';
-const subject = 'Test email';
-const body = 'Hello, there will be free krabby patties.'
+// const sender = 'Spongebob Squarepants';
+// const toEmail = 'sd2group5@gmail.com';
+// const subject = 'Test email';
+// const body = 'Hello, there will be free krabby patties.'
 
-async function mailer(toEmail, sender, subject, body) {
+// async function mailer(toEmail, sender, subject, body) {
 
-    let transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-            user: config.email,
-            pass: config.password
-        }
-    });
+//     let transporter = nodemailer.createTransport({
+//         service: 'gmail',
+//         auth: {
+//             user: config.email,
+//             pass: config.password
+//         }
+//     });
 
-    let info = await transporter.sendMail({
-        from: `${sender} <${config.email}>`, 
-        to: toEmail, 
-        subject: subject, 
-        text: body
-    });
+//     let info = await transporter.sendMail({
+//         from: `${sender} <${config.email}>`, 
+//         to: toEmail, 
+//         subject: subject, 
+//         text: body
+//     });
 
-    console.log("Message sent: %s", info.messageId);
+//     console.log("Message sent: %s", info.messageId);
+// }
+
+module.exports = {
+    sendEmail: async function(toEmail, subject, body) {
+
+        let transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: config.email,
+                pass: config.password
+            }
+        });
+    
+        let info = await transporter.sendMail({
+            from: `${config.sender} <${config.email}>`, 
+            to: toEmail, 
+            subject: subject, 
+            text: body
+        });
+    
+        console.log("Message sent: %s", info.messageId);
+    }
 }
 
 // This is just for testing purposes
