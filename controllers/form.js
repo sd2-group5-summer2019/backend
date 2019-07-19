@@ -87,28 +87,36 @@ class form {
                 next;
             }
             
+            // Loop through and insert questions.
             for(let i = 0; i < questions.length; i++) {
                 try {
                     category_id=questions[i].category_id;
+
+                    // Check for cateogry id and question threshold.
                     if(questions[i].category_id===undefined)
                     {
                         category_id=1;
                     }
+
                     if(questions[i].question_threshold===undefined)
                     {
                         questions[i].question_threshold=null;
                     }
+
+                    // Insert the question.
                     var returnQuestionID = await sequelize.query(
                         'CALL insert_form_question(?,?,?,?,?)', 
                         {replacements:[ category_id, form_id, questions[i].question_text, questions[i].question_type,questions[i].question_threshold ], type: sequelize.QueryTypes.CALL})
+                    
+                    // Grab the question id that was inserted.
                     var question_id=returnQuestionID[0]['LAST_INSERT_ID()'];
-                        status.status2 = " Insert Question";
+                    status.status2 = " Insert Question";
                     
                 
-                
-                    if(questions[i].question_type != 'select'&&questions[i].question_type!='free_response')
+                    // Add answer keys for each question.
+                    if(questions[i].question_type != 'select' && questions[i].question_type != 'free_response')
                     {
-                        for(let j=0;j<questions[i].answers.length;j++)
+                        for(let j = 0 ; j < questions[i].answers.length; j++)
                         {
                             let answer = await sequelize.query(
                                 'CALL insert_answer_key(?,?,?)', 
@@ -117,14 +125,11 @@ class form {
                            // var question_id = returnQuestionID[0]['LAST_INSERT_ID()'];
                         }
                     }
-                    
                 }catch(error) {
-                        console.log(error);
-                        status.status2 = "Failed";
-                        next;
-                    }
-                    
-                 
+                    console.log(error);
+                    status.status2 = "Failed";
+                    next;
+                }
             }
             res.send(status);
         }
@@ -135,14 +140,18 @@ class form {
 
             // Insert the form.
             try {
+
+                // Check the form threshold.
                 if(form_threshold===undefined)
                 {
                     form_threshold=null;
                 }
+
+                // Insert the form and return is the new ID.
                 returnFormID = await sequelize.query(
                     'CALL insert_form(?,?,?,?,?,?)', 
                     {replacements:[ access_level, description, title, type, user_id, form_threshold ], type: sequelize.QueryTypes.CALL});
-                // console.log(returnFormID[0]['LAST_INSERT_ID()']);
+                    
                 form_id = returnFormID[0]['LAST_INSERT_ID()'];
                 // console.log(form_id);
                 status.status1 = "Meeting Created";
