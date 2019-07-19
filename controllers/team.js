@@ -2,16 +2,29 @@ const { sequelize } = require('../models');
 
 class teamInfo {
 
+    // This will return team information based on the user type.
+    // If coordinator, then all teams with coordinator_id.
+    // If advisor, then only one team.
     static async getAllTeams(req, res, next) {
-        res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
+        const { user_id } = req.body;
 
-        await sequelize.query('CALL get_all_teams();', {type: sequelize.QueryTypes.CALL})
-            .then(result => res.json(result))
-            .catch(error => {
-                console.log(error);
-                res.send({ status: "Request failed" });
-            });            
+        // Placeholder for the team(s) returned from the DB.
+        let teamList;
+        
+        // Get the teams based on user_id.
+        try{
+            teamList = await sequelize.query('CALL get_all_teams(?);', 
+            {replacements: [ user_id ], type: sequelize.QueryTypes.CALL});
+        }catch(error){
+            res.send({status : "Get All Teams Failed"});
+            console.log("Get All Teams Failed");
+        }
+
+        // Return the list to the frontend.
+        res.send(teamList);   
     }
+
+
     static async generateReport(req,res,next)
     {
         
