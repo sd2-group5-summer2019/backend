@@ -21,7 +21,10 @@ class form {
         if(type === 'survey') {
             // const for survey and form.
             const { access_level, title, user_id, description, questions,form_threshold } = req.body;
-
+            if(form_threshold===undefined)
+            {
+                form_threshold=null;
+            }
             // Insert the form.
             try {
                 returnFormID = await sequelize.query(
@@ -46,6 +49,10 @@ class form {
                     {
                         category_id=1;
                     }
+                    if(questions[i].question_threshold===undefined)
+                    {
+                        questions[i].question_threshold=null;
+                    }
                     let insert = await sequelize.query(
                         'CALL insert_form_question(?,?,?,?,?)', 
                         {replacements:[ category_id,form_id, questions[i].question_text,questions[i].question_type,questions[i].question_threshold ], type: sequelize.QueryTypes.CALL})
@@ -63,7 +70,10 @@ class form {
         if(type === 'quiz') {
             const { access_level, title, user_id, description, questions,form_threshold } = req.body;
             try {
-                
+                if(form_threshold===undefined)
+                {
+                    form_threshold=null;
+                }
 
                 returnFormID = await sequelize.query(
                     'CALL insert_form(?,?,?,?,?,?)', 
@@ -85,6 +95,10 @@ class form {
                     if(questions[i].category_id===undefined)
                     {
                         category_id=1;
+                    }
+                    if(questions[i].question_threshold===undefined)
+                    {
+                        questions[i].question_threshold=null;
                     }
                     var returnQuestionID = await sequelize.query(
                         'CALL insert_form_question(?,?,?,?,?)', 
@@ -123,9 +137,13 @@ class form {
 
             // Insert the form.
             try {
+                if(form_threshold===undefined)
+                {
+                    form_threshold=null;
+                }
                 returnFormID = await sequelize.query(
-                    'CALL insert_form(?,?,?,?,?)', 
-                    {replacements:[ access_level, description, title, type, user_id ], type: sequelize.QueryTypes.CALL});
+                    'CALL insert_form(?,?,?,?,?,?)', 
+                    {replacements:[ access_level, description, title, type, user_id,form_threshold ], type: sequelize.QueryTypes.CALL});
                 // console.log(returnFormID[0]['LAST_INSERT_ID()']);
                 form_id = returnFormID[0]['LAST_INSERT_ID()'];
                 // console.log(form_id);
@@ -157,8 +175,12 @@ class form {
             // Insert the form.
                 const{access_level,description,end_date,milestone_id,owner_id,start_date,team_id,title,type,user_id}=req.body;
                 try {
+                    if(form_threshold===undefined)
+                {
+                    form_threshold=null;
+                }
                     returnFormID = await sequelize.query(
-                        'CALL insert_form(?,?,?,?,?)', 
+                        'CALL insert_form(?,?,?,?,?,?)', 
                         {replacements:[ access_level, description, title, type, user_id ], type: sequelize.QueryTypes.CALL});
                     // console.log(returnFormID[0]['LAST_INSERT_ID()']);
                     form_id = returnFormID[0]['LAST_INSERT_ID()'];
@@ -198,9 +220,13 @@ class form {
         if(type === 'milestone') {
             // Insert the form.
             const{access_level,description,end_date,start_date,team_id,title,type,user_id}=req.body;
+            if(form_threshold===undefined)
+            {
+                    form_threshold=null;
+            }
             try {
                 returnFormID = await sequelize.query(
-                    'CALL insert_form(?,?,?,?,?)', 
+                    'CALL insert_form(?,?,?,?,?,?)', 
                     {replacements:[ access_level, description, title, type, user_id ], type: sequelize.QueryTypes.CALL});
                 // console.log(returnFormID[0]['LAST_INSERT_ID()']);
                 form_id = returnFormID[0]['LAST_INSERT_ID()'];
