@@ -2,7 +2,7 @@ const { sequelize } = require('../models');
 const bcrypt = require('bcrypt');
 const uuid = require('uuidv4');
 const mail = require('./mailer');
-const verifyStudent = require('../models/verifyStudentEmail');
+// const verifyStudent = require('../models/verifyStudentEmail');
 const saltRounds = 10;
 
 class register {
@@ -48,7 +48,7 @@ class register {
 
                     try {
                         await sequelize.query(`CALL insert_auth_code(?,?)`, {replacements:[auth_code, username], type: sequelize.QueryTypes.CALL});
-                        mail.sendEmail(result[0]['email'], verifyStudentEmail.subject, verifyStudentEmail.body);
+                        // mail.sendEmail(result[0]['email'], verifyStudentEmail.subject, verifyStudentEmail.body);
                         next;
                     }
                     catch(error) {
