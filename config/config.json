@@ -2,8 +2,8 @@
   "production": {
     "host": "localhost",
     "port": 3306,
-    "database": "test2",
-    "username": "client",
+    "database": "student_management",
+    "username": "root",
     "password": "orlando"
   },
   "development": {

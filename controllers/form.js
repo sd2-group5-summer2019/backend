@@ -89,28 +89,36 @@ class form {
                 next;
             }
             
+            // Loop through and insert questions.
             for(let i = 0; i < questions.length; i++) {
                 try {
                     category_id=questions[i].category_id;
+
+                    // Check for cateogry id and question threshold.
                     if(questions[i].category_id===undefined)
                     {
                         category_id=1;
                     }
+
                     if(questions[i].question_threshold===undefined)
                     {
                         questions[i].question_threshold=null;
                     }
+
+                    // Insert the question.
                     var returnQuestionID = await sequelize.query(
                         'CALL insert_form_question(?,?,?,?,?)', 
-                        {replacements:[ category_id, form_id, questions[i].question_text, questions[i].question_type, questions[i].question_threshold ], type: sequelize.QueryTypes.CALL})
+                        {replacements:[ category_id, form_id, questions[i].question_text, questions[i].question_type,questions[i].question_threshold ], type: sequelize.QueryTypes.CALL})
+                    
+                    // Grab the question id that was inserted.
                     var question_id=returnQuestionID[0]['LAST_INSERT_ID()'];
-                        status.status2 = " Insert Question";
+                    status.status2 = " Insert Question";
                     
                 
-                
-                    if(questions[i].question_type != 'select'&&questions[i].question_type!='free_response')
+                    // Add answer keys for each question.
+                    if(questions[i].question_type != 'select' && questions[i].question_type != 'free_response')
                     {
-                        for(let j=0;j<questions[i].answers.length;j++)
+                        for(let j = 0 ; j < questions[i].answers.length; j++)
                         {
                             let answer = await sequelize.query(
                                 'CALL insert_answer_key(?,?,?)', 
@@ -119,14 +127,11 @@ class form {
                            // var question_id = returnQuestionID[0]['LAST_INSERT_ID()'];
                         }
                     }
-                    
                 }catch(error) {
-                        console.log(error);
-                        status.status2 = "Failed";
-                        next;
-                    }
-                    
-                 
+                    console.log(error);
+                    status.status2 = "Failed";
+                    next;
+                }
             }
             res.send({'status':status, 'form_id':form_id});
         }
@@ -137,14 +142,18 @@ class form {
 
             // Insert the form.
             try {
+
+                // Check the form threshold.
                 if(form_threshold===undefined)
                 {
                     form_threshold=null;
                 }
+
+                // Insert the form and return is the new ID.
                 returnFormID = await sequelize.query(
                     'CALL insert_form(?,?,?,?,?,?)', 
-                    {replacements:[ access_level, description, title, type, user_id,form_threshold ], type: sequelize.QueryTypes.CALL});
-                // console.log(returnFormID[0]['LAST_INSERT_ID()']);
+                    {replacements:[ access_level, description, title, type, user_id, form_threshold ], type: sequelize.QueryTypes.CALL});
+                    
                 form_id = returnFormID[0]['LAST_INSERT_ID()'];
                 // console.log(form_id);
                 status.status1 = "Meeting Created";
@@ -173,7 +182,7 @@ class form {
         if(type === 'task') {
             
             // Insert the form.
-                const{access_level,description,end_date,milestone_id,owner_id,start_date,team_id,title,type,user_id}=req.body;
+                const{ access_level, description, end_date, milestone_id, owner_id, start_date, team_id, title, type, user_id} = req.body;
                 try {
                     if(form_threshold===undefined)
                 {
@@ -181,7 +190,7 @@ class form {
                 }
                     returnFormID = await sequelize.query(
                         'CALL insert_form(?,?,?,?,?,?)', 
-                        {replacements:[ access_level, description, title, type, user_id ], type: sequelize.QueryTypes.CALL});
+                        {replacements:[ access_level, description, title, type, user_id, null ], type: sequelize.QueryTypes.CALL});
                     // console.log(returnFormID[0]['LAST_INSERT_ID()']);
                     form_id = returnFormID[0]['LAST_INSERT_ID()'];
                     // console.log(form_id);
@@ -219,7 +228,7 @@ class form {
 
         if(type === 'milestone') {
             // Insert the form.
-            const{access_level,description,end_date,start_date,team_id,title,type,user_id}=req.body;
+            const{ access_level, description, end_date, start_date, team_id, title, type, user_id } = req.body;
             if(form_threshold===undefined)
             {
                     form_threshold=null;
@@ -227,7 +236,7 @@ class form {
             try {
                 returnFormID = await sequelize.query(
                     'CALL insert_form(?,?,?,?,?,?)', 
-                    {replacements:[ access_level, description, title, type, user_id ], type: sequelize.QueryTypes.CALL});
+                    {replacements:[ access_level, description, title, type, user_id, null ], type: sequelize.QueryTypes.CALL});
                 // console.log(returnFormID[0]['LAST_INSERT_ID()']);
                 form_id = returnFormID[0]['LAST_INSERT_ID()'];
                 // console.log(form_id);
@@ -287,12 +296,13 @@ class form {
     }
 
     static async createFormInstance(req, res, next){
+        /*
         const {form_id, end_date, start_date, form_type, user_id} = req.body;
 
         try {
             returnInstanceID = await sequelize.query(
-                'CALL insert_form(?,?,?,?)', 
-                {replacements:[ end_date, form_id, start_date, '34'], type: sequelize.QueryTypes.CALL});
+                'CALL insert_form(?,?,?,?,?,?)', 
+                {replacements:[ end_date, form_id, start_date, user_id], type: sequelize.QueryTypes.CALL});
             
             status.status1 = "Assigned";
             next;
@@ -301,6 +311,7 @@ class form {
             status.status1 = "Failed";
             next;
         }
+        */
 
     }
 
@@ -535,39 +546,11 @@ class form {
         }
 
     }
- 
 
-    static async deleteForm(req, res, next) {
-
-        //Prevent deletetion of forms with alredy created instances
-        if(type === 'survey') {
-
-        }
-
-        if(type === 'quiz') {
-            
-        }
-
-        if(type === 'meeting') {
-            
-        }
-
-        if(type === 'task') {
-            
-        }
-
-        if(type === 'milestone') {
-            
-        }
-
-        if(type === 'attendance') {
-            
-        }
-
-    }
     // Get instances that are assigned based on the user_id.
     // This will also grab any instances assigned to the that user's team_id.
     static async getInstances(req, res, next){
+
         const { user_id } = req.body;
         let instanceList;
 
@@ -715,6 +698,7 @@ class form {
         }
     }
 }
+
 async function quizGrader(user_id,form_id,instance_id,responses)
 {
     try {
