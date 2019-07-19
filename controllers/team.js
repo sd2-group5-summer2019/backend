@@ -21,7 +21,7 @@ class teamInfo {
         }
 
         // Return the list to the frontend.
-        res.send(teamList);   
+        res.send({team : teamList});   
     }
 
 
