@@ -24,7 +24,7 @@ class form {
             try {
                 returnFormID = await sequelize.query(
                     'CALL insert_form(?,?,?,?,?,?)', 
-                    {replacements:[ access_level, description, title, type, user_id,form_threshold ], type: sequelize.QueryTypes.CALL});
+                    {replacements:[ access_level, description, title, type, user_id, form_threshold], type: sequelize.QueryTypes.CALL});
                 // console.log(returnFormID[0]['LAST_INSERT_ID()']);
                 form_id = returnFormID[0]['LAST_INSERT_ID()'];
                  console.log(form_id);
@@ -55,13 +55,13 @@ class form {
         }
 
         if(type === 'quiz') {
-            const { access_level, title, user_id, description, questions,form_threshold } = req.body;
+            const { access_level, title, user_id, description, questions, form_threshold } = req.body;
             try {
                 
 
                 returnFormID = await sequelize.query(
                     'CALL insert_form(?,?,?,?,?,?)', 
-                    {replacements:[ access_level, description, title, type, user_id,form_threshold], type: sequelize.QueryTypes.CALL});
+                    {replacements:[ access_level, description, title, type, user_id, form_threshold], type: sequelize.QueryTypes.CALL});
                 // console.log(returnFormID[0]['LAST_INSERT_ID()']);
                 form_id = returnFormID[0]['LAST_INSERT_ID()'];
                 // console.log(form_id);
@@ -419,22 +419,20 @@ class form {
 
     static async getAllForms(req, res, next){
 
-            const { form_id } = req.body;
+            const { user_id } = req.body;
+
+            let forms;
     
-            // CALL getForm SP
-            await sequelize.query('CALL get_all_forms()', {type: sequelize.QueryTypes.CALL})
-            .then(result => {
-                    // Placeholder for now
-                    // console.log(result[0]);
-                    console.log(result);
-                    res.send(result);
-                    // We want to take the result and make the appropriate JSON to send back to the front end
-                })
-                .catch(error => {
-                    console.log(error);
-                    res.send({ status: "Failed" });
-            }); 
-        
+            try{
+                 // CALL getForm SP
+                forms = await sequelize.query('CALL get_all_forms(?)', {replacements : [ user_id ], type : sequelize.QueryTypes.CALL});
+
+            }catch(error){
+                res.send({status : "Get All Forms Failed"});
+            }
+    
+            res.send(forms);
+    
     }
 
     static async deleteForm(req, res, next) {
