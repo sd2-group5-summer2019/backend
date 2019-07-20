@@ -11,7 +11,7 @@ class teamInfo {
         // Placeholder for the team(s) returned from the DB.
         let teamList;
         
-        // Get the teams based on user_id.
+        // Get the teams based on user_id. 
         try{
             teamList = await sequelize.query('CALL get_all_teams(?);', 
             {replacements: [ user_id ], type: sequelize.QueryTypes.CALL});
@@ -24,6 +24,40 @@ class teamInfo {
         res.send({team : teamList});   
     }
 
+    static async createTeam(req,res,next){
+
+        const {user_id, project_name, description, sd1_semester, sd1_year, sd2_semester, sd2_year, sponsor} = req.body;
+        let user_type;
+
+        // Check to see if user_id is type coordinator/
+        try{
+            user_type = await sequelize.query('CALL get_user_type(?)',
+            { replacements : [user_id],
+            type : sequelize.QueryTypes.CALL});
+        }catch(error){
+            console.log("Get User Type Failed");
+            next;
+        }
+
+        console.log("Get User Type Success");
+
+        // If user is not coordinator, return to frontend.
+        if(user_type != 'coordinator')
+            res.send({status : "User is not Coordinator"});
+
+        // Insert team.
+        try{
+            await sequelize.query('CALL insert_team(?,?,?,?,?,?,?,?)',
+            { replacements : [description, project_name, sd1_semester, sd1_year, sd2_semester, sd2_year, sponsor, user_id],
+            type : sequelize.QueryTypes.CALL});
+        }catch(error){
+            console.log("create team failed");
+            res.send({status : "create team failed"});
+        }
+        
+        res.send({status : "success"});
+
+    }
 
     static async generateReport(req,res,next)
     {

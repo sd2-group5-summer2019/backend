@@ -30,7 +30,9 @@ router.post('/getAllStudents', studentController.getAllStudents);
 
 // Team stuff
 router.post('/getAllTeams', teamController.getAllTeams);
-router.post('/generateReport', teamController.generateReport)
+router.post('/generateReport', teamController.generateReport);
+router.post('/createTeam', teamController.createTeam);
+
 // Sponsor stuff
 router.post('/getAllSponsors', sponsorController.getAllSponsors);
 
