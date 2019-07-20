@@ -74,7 +74,7 @@ class teamInfo {
             console.log("get team id failed");
             res.send({ status : "get team id failed"});
         }
-        res.send({ status : success, team_id : teamid});
+        res.send({ status : "success", team_id : teamid});
     }
 
     static async generateReport(req,res,next)
