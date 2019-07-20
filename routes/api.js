@@ -3,7 +3,7 @@ const router = express.Router();
 const passportService = require('../services/passport');
 const passport = require('passport');
 const requireAuth = passport.authenticate('jwt', { session: false });
-const multer= require('multer');
+
 // Controllers
 const loginController = require('../controllers/login');
 const studentController = require('../controllers/student');
@@ -49,10 +49,8 @@ router.post('/assignForm', formController.assignForm);
 // Testing for the frontend JSON.
 router.post('/frontendTest', frontendTestController.frontendTest);
 
-//const storage = multer.memoryStorage();
-//const upload = multer({ storage });
-router.post('/registerCSV', registerCSVController.registercsv/*,upload.single('myFile')*/);
-router.post('/teamregisterCSV', registerCSVController.teamregistercsv/*,upload.single('myFile')*/);
+router.post('/registerCSV', registerCSVController.registercsv);
+router.post('/teamregisterCSV', registerCSVController.teamregistercsv);
 
 
 module.exports = router;

@@ -3,9 +3,9 @@ const { sequelize } = require('../models');
 
 const parse = require('csv-parser');
 const uuid4 = require('uuid4');
-const multer  = require('multer');
 const fs=require('fs');
 class register_csv {
+	//Registers Students via a csv file
 	static async registercsv(req,res,next)
 	//async function parser(filepath)
 	{
@@ -21,27 +21,24 @@ class register_csv {
 			}
 		  res.send({ status : "Sucessfull Request" });
 	}
+	//Assigns students to teamas based on valid csv file
 	static async teamregistercsv(req,res,next)
 	{
 		const {file,coordinator_id} =req.body;
-		console.log(file);
 		var department_id;
 		try {
-			
-			var arr=await teamparser(file,coordinator_id);
-			
+			var status=await teamparser(file,coordinator_id);
 		} catch (error) {
 			res.send({ status : "Retrieval Failure" });
 			console.log(error);
 			next;
 			}
-			res.send({ status : "Sucessfull Request" });
+			res.send(status);
 	
 	}
 	
 }
-
-//Actual Insertion
+//Actual Creation of students
 async function insert_students(arr)
 {
 	var id;
@@ -59,58 +56,61 @@ async function insert_students(arr)
 			//next;
 		}
 		try {
-			id=user[0]['last_insert_id()'];
-			var nStudent =await sequelize.query('call insert_student(?,?,?,?,?,?,?)',
+			
+			//Get User ID
+			id=user[0]['LAST_INSERT_ID()'];
+			await sequelize.query('call insert_student(?,?,?,?,?,?,?)',
 			{replacements:[2,'fall',2020,'spring',2021,null,id ]
 			, type: sequelize.QueryTypes.CALL})
-			console.log(arr[i].first_name+ " has been registered");
+			//console.log(arr[i].first_name+ " has been registered");
 		} catch (error) {
 			console.log(error);
 //			next;
 		}
 	}
 }
-async function insert_teams(arr,arr2,id)
+//Actual insertion of teams and assigning students 
+async function insert_teams(arr,arr2,coordinator_id)
 {
 	var team;
 	for (i=0;i<arr.length;i++)
 	{
+		//Create the new sponsor
 		try {
-			var sql = `CALL insert_team (?,?,?,?,?,?,?,?)`;
+			let sql= `CALL insert_sponsor(?,?)`;
+			var sponsorID =await sequelize.query(sql,
+				{replacements:[arr[i].Sponsor.company,arr[i].Sponsor.email],
+				type: sequelize.QueryTypes.CALL})	
+		} catch (error) {
+			console.log(error);
+		}
+		//Adding team to database
+		try {
+			var sql = `CALL insert_team (?,?,?,?,?,?,?,?,?)`;
 			team =await sequelize.query(sql,
-					{replacements:[id,arr[i].description,arr[i].number,arr[i].SD1_Term,
-					arr[i].SD1_Year,arr[i].SD2_Term,arr[i].SD2_Year,arr[i].title],
+					{replacements:[coordinator_id,arr[i].description,arr[i].number,arr[i].SD1_Term,
+					arr[i].SD1_Year,arr[i].SD2_Term,arr[i].SD2_Year,sponsorID[0]['LAST_INSERT_ID()'],arr[i].title],
 					type: sequelize.QueryTypes.CALL})	
-				//console.log(arr[i].first_name+" has been inserted as a user");
 			} catch (error) {
-				//if already there reactivate
 				console.log(error);
-				//next;
 			}
-			//ADvisor
+		//Creating Advisor Entry
 		try {
-			//var team_id=team[0]['last_insert_id()'];
-			var team_id=arr[i].number;
+			//Get team id to assign to advisor
+			var team_id=team[0]['LAST_INSERT_ID()'];
+			//Insert as user first
 			var user= await sequelize.query(`CALL INSERT_USER(?,?,?,?,?,?)`,
 				{replacements:[arr[i].Advisor.email.slice(0,arr[i].Advisor.email.toString().indexOf("@")),
-				uuid4(),'sponsor',
+				uuid4(),'advisor',
 				arr[i].Advisor.last_name,arr[i].Advisor.first_name,arr[i].Advisor.email],
 				type: sequelize.QueryTypes.CALL})
-			var uid= user[0]['last_insert_id()'];
+			//Retrieve new userID
+			var uid= user[0]['LAST_INSERT_ID()'];
 			let sql= `CALL insert_advisor(?,?)`;
 			let advisor =await sequelize.query(sql,
 				{replacements:[team_id,uid],
 				type: sequelize.QueryTypes.CALL})	
 			
-		} catch (error) {
-			console.log(error);
-//			next;
-		}
-		try {
-			let sql= `CALL insert_sponsor(?,?)`;
-			let sponsor =await sequelize.query(sql,
-				{replacements:[arr[i].Sponsor.company,arr[i].Sponsor.email],
-				type: sequelize.QueryTypes.CALL})	
 		} catch (error) {
 			console.log(error);
 		}
@@ -120,121 +120,116 @@ async function insert_teams(arr,arr2,id)
 	{
 		try
 		{
-			try {
-				var result=await sequelize.query(`Select user_id from users where first_name= ? and last_name=?`,
-				{replacements:[arr2[j].first_name,arr2[j].last_name],type: sequelize.QueryTypes.CALL})
-			}catch(error)
-			{
-				console.log(error)
-			}
+			//Get User ID based on name
+			var result=await sequelize.query(`Select user_id from users where first_name= ? and last_name=?`,
+			{replacements:[arr2[j].first_name,arr2[j].last_name],type: sequelize.QueryTypes.CALL})
+			//Name not found
 			if(result[0][0]===undefined)
 			{
 				continue;
 			}
-			let term1 = arr2[j].SD1.slice(0,arr2[j].SD1.indexOf(" ")+1);
-			let year1 = arr2[j].SD1.slice(arr2[j].SD1.indexOf(" ")+1,arr2[j].SD1.length);
-			let term2 = arr2[j].SD2.slice(0,arr2[j].SD1.indexOf(" ")+1);
-			let year2 = arr2[j].SD2.slice(arr2[j].SD1.indexOf(" ")+1,arr2[j].SD1.length);
-		let sql=`CALL assign_to_team(?,?,?,?)`;
-		var results=await sequelize.query(sql,
-				{replacements:[arr2[j].team,result[0][0]['user_id'],
-				arr[j].SD1_Term,arr[j].SD1_Year,arr[j].SD2_Term,arr[j].SD2_Year,year],type: sequelize.QueryTypes.CALL})	
+			//Assign student to team
+			let sql=`CALL csv_assign_to_team(?,?)`;
+			var results=await sequelize.query(sql,
+					{replacements:[arr2[j].team,result[0][0]['user_id'],
+					],type: sequelize.QueryTypes.CALL})	
 		} catch (error) {
-			console.log(error);
-		}
+				console.log(error);
+			}
 	}
 }
-
 //Regular expression to validate emails	
 function emailIsValid (email) {
 		return /\S+@\S+\.\S+/.test(email)
 }
+//Function to create student users
 async function studentparser(file)
 {
 	var array=[];
+	//Doubling slashes to better handle them
 	file.replace("/","//")
-	console.log(file);
-	//var stream=;
+	//Create File Stream
 	fs.createReadStream(file)
 	.pipe(parse())
-	.on('data', function(data){
-			var name=data.Name.toString().split(" ");
-			//var f_name=name[0].slice(name[0].indexOf(':"')+1).slice(1);
-			if(name[0] =='' || name[1]=='' || data.Email=='' || data.NID =='')
+	.on('data', function(data){	
+			//Verifying values are there
+			if(data.NID =='' || data['First Name']=='' || data['Last Name']=='' || data.Email =='')
 			{
-				(result => { res.send({ status : "Values Missing" })});
+				 return("Values Missing");
 			}
-			if(!emailIsValid(data.Email))
+			//Verifying email is correct
+			if(!emailIsValid(data['Email Address']))
 			{
-				(result => { res.send({ status : "Invalid email" })});
+				return("Invalid Email");
 			}	
+			//Building user object
 			var user = {
-				"nid":data.NID,
-				"first_name" : name[0],
-				"last_name" : name[1],
-				"email":data.Email
+				"nid":data['NID'],
+				"first_name" : data['First Name'],
+				"last_name" : data['Last Name'],
+				"email":data['Email Address']
 				};
-			//Reject header
+			//Push user to array
 			array.push(user);
 	})
 	.on('end', function(data) {
-	  console.log(' done');
-	  //console.log(array);
 	  insert_students(array);
-	  //return array;
 	});
-	//return array;
+	return ("Success");
 }
+//Function to create teams and assign students to said teams
 async function teamparser(file,id)
 {
 	var students=[];
 	var array=[];
 	var switched=false;
 	file.replace("/","//")
-	console.log(file);
-	//var stream=;
+	/*
+	Need to add check if file actually exists
+	*/
+	//Creating Stream to read .csv file
 	fs.createReadStream(file)
 	.pipe(parse())
 	.on('data', function(data){
-		//console.log(data);
-		if(data.Number==""|| data.Number=="Primary")
+		//Move from retrieving teams to retrieving students
+		if(data['Team Number']==""|| data['Team Number']=="First Name")
 		{
 			switched=true;
-		//	console.log(switched);
 		}
 		if(switched)
 		{
-				if(data.Number!=undefined&&data.Number!=""&&data.Number!="Primary")
+			if(data['Team Number']!=undefined&&data['Team Number']!=""&&data['Team Number']!="Primary")
 			{
+				//Building student object
 				var student=
 				{
-					"first_name":data.Number,
-					"last_name":data.ProjectTitle,
-					"team":data.Description
+					"first_name":data['Team Number'],
+					"last_name":data['Project Title'],
+					"team":data['Project Description']
 				}
 				students.push(student);
 			}
 		}
 		else
 		{
-			var SD1=data.SD1.split(" ");
-			var SD2=data.SD2.split(" ");
-			var Advisor=data.AdvisorName.split(" ");
-			
-			if(!emailIsValid(data.AdvisorEmail)||!emailIsValid(data.SponsorEmail))
+			var SD1=data['SD1 Term'].split(" ");
+			var SD2=data['SD2 Term'].split(" ");
+			var Advisor=data['Advisor Name'].split(" ");
+			//Verifying emails are properly structured
+			if(!emailIsValid(data['Advisor Email'])||!emailIsValid(data['Sponsor Email']))
 			{
-				(result => { res.send({ status : "Invalid email" })});
-			}	
-			if(data.Number==''||data.ProjectTitle==''||data.SD1==''||data.SD2=='')
-			{
-				(result => { res.send({ status : "Values Missing" })});
+				return("Email Invalid");
 			}
-			
-				
+			//Ensuring values are there
+			if(data['Team Number']==''||data['Project Title']==''||data['SD1 Term']==''||data['SD2 Term']=='')
+			{
+				return("Values Missing");
+			}
+			//Building Team Object
 			var team = {
-				"number":data.Number,
-				"title":data.ProjectTitle,
-				"description":data.Description,
+				"number":data['Team Number'],
+				"title":data['Project Title'],
+				"description":data['Project Description'],
 				"SD1_Term":SD1[0],
 				"SD1_Year":SD1[1],
 				"SD2_Term":SD2[0],
@@ -243,25 +238,22 @@ async function teamparser(file,id)
 				{
 					"first_name":Advisor[0],
 					"last_name":Advisor[1],
-					"email":data.AdvisorEmail
+					"email":data['Advisor Email']
 				},
 				"Sponsor":
 				{
-					"company":data.SponsorCompany,
-					"email":data.SponsorEmail
+					"company":data['Sponsor Company'],
+					"email":data['Sponsor Email']
 				},
 			};
-			//Reject header
+			//Push to teams array
 			array.push(team);
 		}
-		//console.log(team);
-		//console.log(student);
 	})
 	.on('end', function(data) {
 	  //insert teams and assign students
 	  insert_teams(array,students,id);
 	});
-	return array;
+	return("Success");
 }
 module.exports = register_csv;
-//studentparser('C:\\Users\\Frant\\Downloads\\test_data.CSV');
