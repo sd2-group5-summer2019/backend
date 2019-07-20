@@ -42,8 +42,9 @@ class teamInfo {
         console.log("Get User Type Success");
 
         // If user is not coordinator, return to frontend.
-        if(user_type != 'coordinator')
+        if(user_type != 'coordinator'){
             res.send({status : "User is not Coordinator"});
+        }
 
         let newTeamID;
 
@@ -58,7 +59,22 @@ class teamInfo {
             res.send({status : "create team failed"});
         }
 
+        // returns the new team id. 
         res.send({status : "success", team_id : newTeamID});
+    }
+
+    static async getTeamID(req, res, next){
+        const {user_id} = req.body;
+        let teamid;
+        try{
+            teamid = await sequelize.query('CALL get_team_id(?)',
+            { replacements : [user_id], type: sequelize.QueryTypes.CALL });
+        } catch(error)
+        {
+            console.log("get team id failed");
+            res.send({ status : "get team id failed"});
+        }
+        res.send({ status : success, team_id : teamid});
     }
 
     static async generateReport(req,res,next)
