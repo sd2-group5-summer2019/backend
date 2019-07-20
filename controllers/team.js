@@ -45,18 +45,20 @@ class teamInfo {
         if(user_type != 'coordinator')
             res.send({status : "User is not Coordinator"});
 
+        let newTeamID;
+
         // Insert team.
         try{
-            await sequelize.query('CALL insert_team(?,?,?,?,?,?,?,?)',
+            let result = await sequelize.query('CALL insert_team(?,?,?,?,?,?,?,?)',
             { replacements : [description, project_name, sd1_semester, sd1_year, sd2_semester, sd2_year, sponsor, user_id],
             type : sequelize.QueryTypes.CALL});
+            newTeamID = result[0]['LAST_INSERT_ID()'];
         }catch(error){
             console.log("create team failed");
             res.send({status : "create team failed"});
         }
-        
-        res.send({status : "success"});
 
+        res.send({status : "success", team_id : newTeamID});
     }
 
     static async generateReport(req,res,next)
