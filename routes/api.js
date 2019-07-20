@@ -18,9 +18,13 @@ const registerCSVController = require('../controllers/registerCSV');
 // Login routes
 router.post('/login', loginController.login);
 router.post('/login_secure', loginController.login_secure);
+router.post('/changePassword', loginController.changePassword);
 
 // Register routes.
 router.post('/register', registerController.register);
+router.post('/verifyStudentEmail', registerController.verifyStudentEmail);
+router.post('/verifyCode', registerController.verifyCode);
+router.post('/setNewPassword', registerController.setNewPassword);
 
 // Get a student's information
 router.post('/getAllStudents', studentController.getAllStudents);

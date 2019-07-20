@@ -470,7 +470,7 @@ class form {
             next;
         }
 
-        if(type === 'survey') {
+        if(type === 'survey') {            
             try {
                 // CALL get_user_form_answers(?)
                 answers = await sequelize.query(
@@ -547,6 +547,11 @@ class form {
         }catch(error){
             res.send({status : "Get Instances Failed"});
         }
+
+
+
+
+
 
         res.send(instanceList);
     }
