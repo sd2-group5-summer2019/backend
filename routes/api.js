@@ -35,6 +35,7 @@ router.post('/createTeam', teamController.createTeam);
 
 // Sponsor stuff
 router.post('/getAllSponsors', sponsorController.getAllSponsors);
+router.post('/assignSponsorToTeam', sponsorController.assignSponsorToTeam);
 
 // Form
 router.post('/assignForm', formController.assignForm);
