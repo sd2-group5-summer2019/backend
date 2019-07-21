@@ -14,7 +14,7 @@ const sponsorController = require('../controllers/sponsor');
 const formController = require('../controllers/form');
 const frontendTestController = require('../controllers/frontendTest');
 const registerCSVController = require('../controllers/registerCSV');
-
+const analyticsController=require('../controllers/analytics');
 // Login routes
 router.post('/login', loginController.login);
 router.post('/login_secure', loginController.login_secure);
@@ -56,5 +56,5 @@ router.post('/frontendTest', frontendTestController.frontendTest);
 router.post('/registerCSV', registerCSVController.registercsv);
 router.post('/teamregisterCSV', registerCSVController.teamregistercsv);
 
-
+router.post('/getAnalytics', analyticsController.questionAnalytics);
 module.exports = router;
