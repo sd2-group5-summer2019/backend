@@ -66,6 +66,7 @@ class form {
         }
 
         if(type === 'quiz') {
+            console.log(req.body);
             const { access_level, title, user_id, description, questions, form_threshold } = req.body;
             
             let isThreshold = 0;
@@ -347,6 +348,7 @@ class form {
 
     static async getForm(req, res, next) {
 
+        // TODO need to return all info for a form.
         const { form_id } = req.body;
 
         let returnForm;
@@ -597,7 +599,9 @@ class form {
     
             try{
                  // CALL getForm SP
-                forms = await sequelize.query('CALL get_all_forms(?)', {replacements : [ user_id ], type : sequelize.QueryTypes.CALL});
+                forms = await sequelize.query('CALL get_all_forms(?)', 
+                {replacements : [ user_id ], 
+                type : sequelize.QueryTypes.CALL});
 
             }catch(error){
                 res.send({status : "Get All Forms Failed"});
@@ -649,11 +653,6 @@ class form {
             res.send({status : "Get Instances Failed"});
         }
 
-
-
-
-
-
         res.send(instanceList);
     }
 
@@ -663,8 +662,8 @@ class form {
     // 3 = individual users, list of users will be sent.
     static async assignForm(req, res, next)
     {
+        
         let status = {};
-        res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
         if(req.body.code === 1)
         {
             let studentList;
@@ -674,6 +673,7 @@ class form {
                 studentList = await sequelize.query('CALL get_all_students_assign(?,?,?,?)', {replacements:[ sd1_term, sd1_year, sd2_term, sd2_year ], type: sequelize.QueryTypes.CALL});
                 next;
             } catch (error) {
+                console.log(error);
                 status.status1 = "Failed";
                 next;
             }
@@ -747,9 +747,9 @@ class form {
                     catch (error) 
                     {
                         // Failed to insert instance for user.
+                        console.log(error);
                         status.status2 = "Insert Form Instance Failed";
                         res.send(status); 
-                        next;
                     }
                           
                 }                
@@ -759,6 +759,7 @@ class form {
         // List of users given.
         else if (req.body.code === 3)
         {
+            console.log(req.body);
             const{ form_id, start_date, end_date, students } = req.body;
 
             // check to see if list in populated.
@@ -766,7 +767,6 @@ class form {
             {
                 res.send({ status : "Students not found" });
             }
-            
             // Loop through the list of users from the request body.
             for (var i = 0; i < students.length; i++)
             {
@@ -776,11 +776,12 @@ class form {
                         type: sequelize.QueryTypes.CALL});
                     next;       
                 } catch (error) {
+                    console.log(error);
                     status.status3 = "Insert Form Instance Failed";
                     res.send(status); 
-                    next;       
                 }
             }
+            console.log(req.body);
             
             res.send({ status : "success" });
         

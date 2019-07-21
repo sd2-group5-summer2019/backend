@@ -8,7 +8,7 @@ class studentInfo {
         // Get all students based on user type.
         // Return the first, last, and user_id.
 
-        const { type } = req.body;
+        const { user_id, type } = req.body;
 
         if(type == 'coordinator')
         {
