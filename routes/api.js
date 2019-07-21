@@ -18,7 +18,6 @@ const analyticsController=require('../controllers/analytics');
 // Login routes
 router.post('/login', loginController.login);
 router.post('/login_secure', loginController.login_secure);
-router.post('/changePassword', loginController.changePassword);
 
 // Register routes.
 router.post('/register', registerController.register);
@@ -28,25 +27,32 @@ router.post('/setNewPassword', registerController.setNewPassword);
 
 // Get a student's information
 router.post('/getAllStudents', studentController.getAllStudents);
+router.post('/insertStudent', studentController.insertStudent);
+router.post('/updateStudent', studentController.updateStudent);
 
 // Taking survey routes.
-// router.post('/getSurvey', surveyController.getSurvey);
+ router.post('/getSurvey', surveyController.getSurvey);
 // router.post('/submitSurvey', surveyController.submitSurvey);
 
 // Team stuff
 router.post('/getAllTeams', teamController.getAllTeams);
-router.post('/generateReport', teamController.generateReport)
+router.post('/generateReport', teamController.generateReport);
+router.post('/createTeam', teamController.createTeam);
+router.post('/getTeamID', teamController.getTeamID);
+
 // Sponsor stuff
 router.post('/getAllSponsors', sponsorController.getAllSponsors);
+router.post('/assignSponsorToTeam', sponsorController.assignSponsorToTeam);
 
 // Form
+router.post('/assignForm', formController.assignForm);
 router.post('/createForm', formController.createForm);
 router.post('/getForm', formController.getForm);
 router.post('/updateForm', formController.updateForm);
 router.post('/submitForm', formController.submitForm);
-//router.post('/deleteForm', formController.deleteForm);
+router.post('/deleteForm', formController.deleteForm);
 router.post('/getAnswers', formController.getAnswers);
-router.post('/assignForm', formController.assignForm);
+router.post('/getAllForms', formController.getAllForms)
 router.post('/getInstances', formController.getInstances);
 router.post('/assignForm', formController.assignForm);
 

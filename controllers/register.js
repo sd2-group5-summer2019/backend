@@ -7,28 +7,56 @@ const saltRounds = 10;
 
 class register {
     static async register(req, res, next) {
-        res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
         const { username, password, type, first_name, last_name, email } = req.body;
 
         // Generate a salt and then hash the password
         const salt = await bcrypt.genSalt(saltRounds);
         const hash = await bcrypt.hash(password, salt);
 
-        // Insert into the DB but note that we are storing the hash instead of the plaintext password
-        await sequelize.query(`CALL insert_user(?,?,?,?,?,?);`, 
-        {replacements:[username, hash, type, last_name, first_name, email], type: sequelize.QueryTypes.CALL})
-            .then(result => {
-                // DB will return if insert was successful and how many rows were inserted.                
-                res.send({ status: "Success" });
-            }).catch(error => {
-                // If error occurs, DB will send back JSON with a lot of information.
-                // Thinking of adding more exceptions.
+        let new_user_id;
+        // insert the new user.
+        try{
+            let result = await sequelize.query(`CALL insert_user(?,?,?,?,?,?);`, 
+            {replacements:[username, hash, type, last_name, first_name, email], type: sequelize.QueryTypes.CALL});
+            new_user_id = result[o]['LAST_INSERT_ID()'];
+        }catch(error){
+            console.log(error);
+            if(error.parent.code === 'ER_DUP_ENTRY')
+                res.send({ err : "Duplicate"});
+            else
+                res.send({ status : "Unkonw error"});
+        }
+
+        // Based on user type, insert into respected table.
+        if(type == 'coordinator'){
+            try{
+                await sequelize.query('CALL insert_coordinator(?,?)',
+                {replacements : [1, new_user_id],
+                type : sequelize.QueryTypes.CALL});
+            }catch(error){
                 console.log(error);
-                if(error.parent.code === 'ER_DUP_ENTRY')
-                    res.send({ err : "Duplicate"});
-                else
-                    res.send({ status : "Unkonw error"});
-            });
+            }
+        }
+        else if(type == 'student'){
+            const { sd1_term, sd1_year, sd2_term, sd2_year } = req.body;
+            try{
+                await sequelize.query('CALL insert_student(?,?,?,?,?,?,?)',
+                {replacements : [1, sd1_term, sd1_year, sd2_term, sd2_year, null, new_user_id],
+                type : sequelize.QueryTypes.CALL});
+            }catch(error){
+                console.log(error);
+            }
+        }
+        else if(type == 'advisor'){
+            try{
+                await sequelize.query('CALL insert_advisor(?,?)',
+                {replacements : [null, new_user_id],
+                type : sequelize.QueryTypes.CALL});
+            }catch(error){
+                console.log(error);
+            }
+        }
+        res.send({ status : "success"});
     }
 
     static async verifyStudentEmail(req, res, next) {
