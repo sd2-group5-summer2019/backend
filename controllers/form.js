@@ -208,49 +208,66 @@ class form {
 
         if(type === 'task') {
             
+            const{ access_level, description, end_date, start_date, title, user_id, milestone_instance_id, form_threshold, assign_to_id } = req.body;
+
+            let temp_task_instance_id;
+
+            let temp_milestone_instance_id = null;
+            if(milestone_instance_id != undefined)
+            {
+                temp_milestone_instance_id = milestone_instance_id;
+            }
+
             // Insert the form.
-                const{ access_level, description, end_date, milestone_id, owner_id, start_date, team_id, title, type, user_id} = req.body;
-                try {
-                    if(form_threshold===undefined)
+            try {
+                
+                let thresholdTemp = null;
+                if(form_threshold != undefined)
                 {
-                    form_threshold=null;
+                    thresholdTemp = form_threshold;
                 }
-                    returnFormID = await sequelize.query(
-                        'CALL insert_form(?,?,?,?,?,?)', 
-                        {replacements:[ access_level, description, title, type, user_id, null ], type: sequelize.QueryTypes.CALL});
-                    // console.log(returnFormID[0]['LAST_INSERT_ID()']);
-                    form_id = returnFormID[0]['LAST_INSERT_ID()'];
-                    // console.log(form_id);
-                    status.status1 = "Form Created";
+
+                returnFormID = await sequelize.query(
+                    'CALL insert_form(?,?,?,?,?,?)', 
+                    {replacements:[ access_level, description, title, type, user_id, thresholdTemp ], 
+                    type: sequelize.QueryTypes.CALL});
+                // console.log(returnFormID[0]['LAST_INSERT_ID()']);
+                form_id = returnFormID[0]['LAST_INSERT_ID()'];
+                // console.log(form_id);
+                status.status1 = "Form Created";
+                
+            } catch(error) {
+                console.log(error);
+                res.send({status : "insert form failed"});
+            }
+
+            // Create the instance.
+            try{
+                let result = await sequelize.query('CALL insert_form_instance_user(?,?,?,?)',
+                { replacements: [ end_date, form_id, start_date, assign_to_id ],
+                type : sequelize.QueryTypes.CALL});
+                console.log(result);
+                temp_task_instance_id = result[0]['LAST_INSERT_ID()'];
+                console.log(temp_task_instance_id);
+            }catch(error){
+                console.log(error);
+                res.send({status : "insert form instance failed"});
+            }
+
+            // Insert the task.
+            try{
+                let result = await sequelize.query('CALL insert_form_task(?,?)', 
+                    {replacements:[ temp_task_instance_id, temp_milestone_instance_id ], 
+                    type: sequelize.QueryTypes.CALL});
                     
-                } catch(error) {
-                    console.log(error);
-                    status.status1 = "Failed";
-                    next;
-                }
-                try{
-                    var returnInstance = await sequelize.query('CALL get_milestone_instance(?)', 
-                        {replacements:[milestone_id], type: sequelize.QueryTypes.CALL});
-                        instance = returnInstance[0].instance_id;
-                    status.status2 = "Instance Created";
-                    next;
-                }catch(error){
-                    console.log(error);
-                    status.status2 = "Instance Create Failed";
-                    next;
-                }
-                try{
-                    let result = await sequelize.query('CALL insert_form_task(?,?,?)', 
-                        {replacements:[user_id, instance/*returnInstance[0]['LAST_INSERT_ID()']*/, milestone_id], type: sequelize.QueryTypes.CALL});
-                      
-                    status.status2 = "Task Created";
-                    next;
-                }catch(error){
-                    console.log(error);
-                    status.status2 = "Task Create Failed";
-                    next;
-                }
-             res.send(status);
+                status.status2 = "Task Created";
+                next;
+            }catch(error){
+                console.log(error);
+                status.status2 = "Task Create Failed";
+                next;
+            }
+            res.send(status);
         }
 
         if(type === 'milestone') {
