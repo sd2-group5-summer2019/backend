@@ -105,7 +105,7 @@ class form {
             } catch(error) {
                 console.log(error);
                 status.status1 = "Failed";
-                next;
+                res.send(status);
             }
             
             // Loop through and insert questions.
@@ -148,9 +148,9 @@ class form {
                     {
                         for(let j = 0 ; j < questions[i].answers.length; j++)
                         {
+                            console.log(questions[i]);
                             await sequelize.query('CALL insert_answer_key(?,?,?)', 
-                                {replacements:[ questions[i].answers[j].answer_text, question_id, questions[i].answers[j].is_correct ], 
-                                    type: sequelize.QueryTypes.CALL})
+                                {replacements:[ questions[i].answers[j].answer, question_id, questions[i].answers[j].isCorrect ], type: sequelize.QueryTypes.CALL});
                             status.status2 = " Insert Answer Key";
                            // var question_id = returnQuestionID[0]['LAST_INSERT_ID()'];
                         }
@@ -158,7 +158,7 @@ class form {
                 }catch(error) {
                     console.log(error);
                     status.status2 = "Failed";
-                    next;
+                    res.send(status);
                 }
             }
             res.send(status);
@@ -351,16 +351,43 @@ class form {
         // TODO need to return all info for a form.
         const { form_id } = req.body;
 
-        let returnForm;
-
+        let returnForm, formType;
+        
+        // get the form type.
         try{
-            returnForm = await sequelize.query('CALL get_form(?)',
-            {replacements : [ form_id], type : sequelize.QueryTypes.CALL});
+            let result = await sequelize.query('CALL get_form_type(?)',
+            { replacements : [form_id], type : sequelize.QueryTypes.CALL});
+            
+            formType = result[0]['type'];
+            
         }catch(error){
-            console.log("get form failed");
-            res.send({status : "get form failed"});
+            console.log(error);
+            res.send({ status : "Could not get form type" });
         }
-        res.send(returnForm);
+
+        // Get the form and any questions for the user to submit.
+        if(formType === 'survey'){
+            let returnSurvey;
+            try{
+                returnSurvey = await sequelize.query('CALL get_survey(?)',
+                {replacements : [ form_id ], type : sequelize.QueryTypes.CALL});
+            }catch(error){
+                console.log(error);
+                res.send({ status : "Could not get survey to take" });
+            }
+            res.send({survey : returnSurvey});
+        }
+        else if(formType === 'quiz'){
+            let returnQuiz;
+            try{
+                returnQuiz = await sequelize.query('CALL get_quiz(?)',
+                {replacements : [ form_id ], type : sequelize.QueryTypes.CALL});
+            }catch(error){
+                console.log(error);
+                res.send({ status : "Could not get quiz to take" });
+            }
+            res.send({ quiz : returnQuiz});
+        }
     }
 
     static async submitForm(req, res, next) {
@@ -418,7 +445,7 @@ class form {
         if(type === 'quiz') {
             for(let i = 0; i < results.length; i++){
                 try {
-                    let callSurvey = await sequelize.query(`CALL submit_survey(?,?,?,?)`, 
+                    let callSurvey = await sequelize.query(`CALL submit_quiz(?,?,?,?)`, 
                         {replacements:[results[i].text,instance_id, results[i].question_id, user_id], type: sequelize.QueryTypes.CALL});
                     // res.send({ status: "Success" });
                     console.log(`Insert ${results[i].question_id} and ${results[i].text}`);
