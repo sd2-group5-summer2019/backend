@@ -20,10 +20,11 @@ class form {
             // const for survey and form.
             const { access_level, title, user_id, description, questions } = req.body;
             // Insert the form.
+
             try {
                 returnFormID = await sequelize.query(
                     'CALL insert_form(?,?,?,?,?,?)', 
-                    {replacements:[ access_level, description,threshold, title, type, user_id ], type: sequelize.QueryTypes.CALL});
+                    {replacements:[ access_level, description,title, type, user_id,null], type: sequelize.QueryTypes.CALL});
                 // console.log(returnFormID[0]['LAST_INSERT_ID()']);
                 form_id = returnFormID[0]['LAST_INSERT_ID()'];
                  console.log(form_id);
@@ -36,7 +37,7 @@ class form {
             }
 
             // Insert the questions for the new form.
-            for(let i = 0; i < questions.length; i++) {
+            for(let i = 0; i < questions.length ; i++) {
                 try {
                     console.log(questions[i].question);
                     if(category_id===undefined)
@@ -144,7 +145,7 @@ class form {
                     next;
                 }
             }
-            res.send(status);
+            res.send({'status':status, 'form_id':form_id});
         }
 
         if(type === 'meeting') {
@@ -154,11 +155,11 @@ class form {
             // Insert the form.
             try {
 
-                // Check the form threshold.
+              /*  // Check the form threshold.
                 if(form_threshold===undefined)
                 {
                     form_threshold=null;
-                }
+                }*/
 
                 // Insert the form and return is the new ID.
                 returnFormID = await sequelize.query(
