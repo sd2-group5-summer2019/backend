@@ -83,6 +83,50 @@ class login {
             })
             .catch(error => console.log(error));
     }
+
+    static async changePassword(req, res, next) {
+        
+        const { username, old_password, new_password } = req.body;
+        
+        // Generate a salt and then hash the password
+        const salt = await bcrypt.genSalt(saltRounds);
+        const hash = await bcrypt.hash(new_password, salt);
+
+        try {
+            let result = await sequelize.query(`SELECT * FROM users WHERE username = ?`, {replacements:[username], type: sequelize.QueryTypes.SELECT});
+
+            // console.log('Got user');
+            if(result[0] !== undefined) {
+                if(result[0]['username'] === username) {
+                    let change = await changePassword(old_password, result[0]['password']);
+
+                    console.log(change);
+                    if(!change) {
+                        res.send({ status: "Incorrect Password" });
+                    }
+                    else {
+                        try {
+                            await sequelize.query(`UPDATE users set password = ? WHERE username = ?`, {replacements:[hash, username], type: sequelize.QueryTypes.UPDATE});
+                            // console.log('Inserted new hash');
+                            res.send({ status: "Success" });
+                        }
+                        catch(error) {
+                            res.send({ status: "Update Password Failed" });
+                            console.log(error);
+                            next;
+                        }
+                    }
+                }
+            }
+            else {
+                res.send({ status: "User Not Found" });
+            }
+        }
+        catch(error) {
+            console.log(error);
+            res.send({ status: "MySQL Error" });
+        }
+    }
 }
 
 module.exports = login;
