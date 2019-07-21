@@ -23,6 +23,8 @@ router.post('/register', registerController.register);
 
 // Get a student's information
 router.post('/getAllStudents', studentController.getAllStudents);
+router.post('/insertStudent', studentController.insertStudent);
+router.post('/updateStudent', studentController.updateStudent);
 
 // Taking survey routes.
  router.post('/getSurvey', surveyController.getSurvey);
