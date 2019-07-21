@@ -272,11 +272,9 @@ class form {
 
         if(type === 'milestone') {
             // Insert the form.
-            const{ access_level, description, end_date, start_date, team_id, title, type, user_id } = req.body;
-            if(form_threshold===undefined)
-            {
-                    form_threshold=null;
-            }
+            const{ access_level, description, end_date, start_date, team_id, title, user_id } = req.body;
+            
+            // insert the form.
             try {
                 returnFormID = await sequelize.query(
                     'CALL insert_form(?,?,?,?,?,?)', 
@@ -297,23 +295,11 @@ class form {
                 var returnInstance = await sequelize.query('CALL insert_form_instance_team(?,?,?,?)', 
                     {replacements:[end_date, form_id, start_date, team_id], type: sequelize.QueryTypes.CALL});
                 status.status2 = "Instance Created";
-                instance = returnInstance[0]['LAST_INSERT_ID()'];
                 //next;
             }catch(error){
                 console.log(error);
                 status.status2 = "Instance Create Failed";
                 next;
-            }
-            try{
-                let returnMilestone = await sequelize.query('CALL insert_form_milestone(?,?)', 
-                    {replacements:[instance, team_id], type: sequelize.QueryTypes.CALL});
-                status.status2 = "Milestone Created";
-                //next;
-            }catch(error){
-                console.log(error);
-                status.status2 = "Milestone Create Failed";
-                next;
-                
             }
             res.send(status);
 
