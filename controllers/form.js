@@ -400,8 +400,9 @@ class form {
 
         // Get form_id from instance_id.
         try{
-            form_id = await sequelize.query('CALL get_form_id(?)',
+            let result = await sequelize.query('CALL get_form_id(?)',
             {replacements : [ instance_id ], type : sequelize.QueryTypes.CALL});
+            form_id = result[0]['form_id'];
         }catch(error){
             console.log(error);
             res.send({status : "get form id failed"});
@@ -411,6 +412,7 @@ class form {
         try {
             let result = await sequelize.query('CALL get_form_type(?)', 
             {replacements:[ form_id ], type: sequelize.QueryTypes.CALL});
+            console.log(result);
             type = result[0]['type'];
             status.status1 = "Success";
             next;
@@ -445,16 +447,15 @@ class form {
         }
 
         if(type === 'quiz') {
-            
             const { results } = req.body;
-           
+           console.log(results);
             for(let i = 0; i < results.length; i++){
                 
                 // Insert into the form answers table.
                 try {
                     // Submit the survey instance.
                     let callSurvey = await sequelize.query(`CALL submit_quiz(?,?,?,?)`, 
-                        {replacements:[instance_id, results[i].question_id, results[i].text, user_id], type: sequelize.QueryTypes.CALL});
+                        {replacements:[ results[i].text, instance_id, results[i].question_id, user_id ], type: sequelize.QueryTypes.CALL});
                     // res.send({ status: "Success" });
                     console.log(`Insert ${results[i].question_id} and ${results[i].text}`);
                     status.status2 = "Submit quiz success";
@@ -465,10 +466,24 @@ class form {
                 }
             }
 
-            let quiz_results;
+            
+
+            /*
+            let quiz_answer_keys;
+            // Get the quiz answer keys.
+            try{
+                let result = await sequelize.query('CALL get_quiz_key_answers(?)', { replacements : [form_id], type: sequelize.QueryTypes.CALL});
+                quiz_answer_keys = result;
+            }catch(error)
+            {
+                console.log(error);
+                res.send({ status : "failed to get quiz key answers"});
+            }
+
+            let quiz_user_answers;
             // Get the users answer.
             try{
-                quiz_results = await sequelize.query('CALL get_user_quiz_answers(?)',
+                quiz_user_answers = await sequelize.query('CALL get_user_quiz_answers(?)',
                 {replacements : [ instance_id ], type : sequelize.QueryTypes.CALL});
             }catch(error){
                 console.log(error);
@@ -476,15 +491,25 @@ class form {
             }
 
             // Calculate the grade.
-            let tempCorrect;
-            let tempTotal = quiz_results.length;
-            for( let i = 0; i < quiz_results.length; i++){
-                if(quiz_results[i].key_text === quiz_results[i].answer_text){
-                    tempCorrect = tempGrade + 1;
+            let tempCorrect ;
+            let tempGrade = 0;
+            let tempTotal = quiz_user_answers.length;
+
+            // Loop through each user answer.
+            for( let i = 0; i < quiz_user_answers.length; i++){
+
+                // Loop through answer keys for comparison.
+                for(let j = 0; j < quiz_answer_keys.length; j++){
+
+                    // Compare the answer to the keys.
+                    if(quiz_user_answers[i].answer_text == quiz_answer_keys[j].key_text){
+                        
+                    }
                 }
             }
-            let tempGrade = (tempCorrect/tempTotal) * 100;
 
+            tempGrade = (tempCorrect/tempTotal) * 100;
+            console.log("TEMP GRADE = " + tempGrade);
             // Submit the grade and complete the quiz instance.
             try{
                 let result = await sequelize.query('CALL complete_quiz(?,?)',
@@ -496,7 +521,7 @@ class form {
             }
 
             res.send({ status : "Quiz submitted and graded"});
-
+            */
         }
 
         if(type === 'task') {
