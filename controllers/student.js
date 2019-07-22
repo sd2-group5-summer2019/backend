@@ -26,7 +26,7 @@ class studentInfo {
             }
         }
 
-        if(type == 'advisor')
+        if(type === 'advisor')
         {
             try
             {

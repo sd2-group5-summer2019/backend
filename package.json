@@ -12,8 +12,11 @@
     "bcrypt": "^3.0.6",
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",
+    "csv-parser": "^2.3.0",
+    "dice-coefficient": "^1.0.4",
     "express": "^4.16.4",
     "fs": "0.0.1-security",
+    "js-levenshtein": "^1.1.6",
     "jsonwebtoken": "^8.5.1",
     "mysql2": "^1.6.5",
     "nconf": "^0.10.0",
@@ -25,6 +28,7 @@
     "path": "^0.12.7",
     "save": "^2.3.3",
     "sequelize": "^5.7.4",
+    "uuid4": "^1.1.4",
     "uuidv4": "^4.0.0"
   }
 }
