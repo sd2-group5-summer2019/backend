@@ -2,7 +2,6 @@ const { sequelize } = require('../models');
 const jwt = require('jsonwebtoken');
 const config = require('../config/config');
 const bcrypt = require('bcrypt');
-const saltRounds = 10;
 
 function tokenForUser(user) {
   const timestamp = new Date().getTime();
@@ -13,17 +12,6 @@ function tokenForUser(user) {
   });
   return token;
 }
-
-// Return true if oldPass is valid
-// Return false if not valid.
-async function changePassword(oldPass, dbHash) {
-    console.log('Checking Password');
-    const match = await bcrypt.compare(oldPass, dbHash);
-
-    if(match) return true;
-
-    return false;
-}  
 
 // ASYNC/AWAIT function to compare user input password vs the db hash
 async function comparePassword(inputPassword, dbHash, res) {
@@ -41,7 +29,7 @@ async function comparePasswordSecure(inputPassword, dbHash, result, token, res) 
     const match = await bcrypt.compare(inputPassword, dbHash);
     const user_id = result.user_id;
     const type = result.type;
-
+        console.log(type);
     if(match) {
         res.send({ 
             user_id: user_id,
