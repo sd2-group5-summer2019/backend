@@ -279,7 +279,8 @@ class form {
             try {
                 returnFormID = await sequelize.query(
                     'CALL insert_form(?,?,?,?,?,?)', 
-                    {replacements:[ access_level, description, title, type, user_id, null ], type: sequelize.QueryTypes.CALL});
+                    {replacements:[ access_level, description, title, type, user_id, null ], 
+                    type: sequelize.QueryTypes.CALL});
                 // console.log(returnFormID[0]['LAST_INSERT_ID()']);
                 form_id = returnFormID[0]['LAST_INSERT_ID()'];
                 // console.log(form_id);
@@ -408,7 +409,8 @@ class form {
 
         // Get the form type with form_id provided.
         try {
-            let result = await sequelize.query('CALL get_form_type(?)', {replacements:[ form_id ], type: sequelize.QueryTypes.CALL});
+            let result = await sequelize.query('CALL get_form_type(?)', 
+            {replacements:[ form_id ], type: sequelize.QueryTypes.CALL});
             type = result[0]['type'];
             status.status1 = "Success";
             next;
@@ -443,22 +445,6 @@ class form {
         }
 
         if(type === 'quiz') {
-            for(let i = 0; i < results.length; i++){
-                try {
-                    let callSurvey = await sequelize.query(`CALL submit_quiz(?,?,?,?)`, 
-                        {replacements:[results[i].text,instance_id, results[i].question_id, user_id], type: sequelize.QueryTypes.CALL});
-                    // res.send({ status: "Success" });
-                    console.log(`Insert ${results[i].question_id} and ${results[i].text}`);
-                    status.status2 = "Success"
-                    next;
-                } catch(error) {
-                    console.log(error);
-                    // res.send({ status: "Failed" });
-                    status.status3 = "Failed";
-                    next;
-                }
-            }
-            //let grade=quizGrader(user_id,form_id,instance_id,results);
             
             const { results } = req.body;
            
@@ -471,12 +457,11 @@ class form {
                         {replacements:[instance_id, results[i].question_id, results[i].text, user_id], type: sequelize.QueryTypes.CALL});
                     // res.send({ status: "Success" });
                     console.log(`Insert ${results[i].question_id} and ${results[i].text}`);
-                    status.status2 = "Success"
+                    status.status2 = "Submit quiz success";
                     next;
                 } catch(error) {
                     console.log(error);
-                    status.status3 = "Failed";
-                    next;
+                    status.status3 = "Submit quiz failed";
                 }
             }
 
@@ -515,14 +500,18 @@ class form {
         }
 
         if(type === 'task') {
-            let complete = await sequelize.query('CALL complete_form(?)',
-                 {replacements:[instance_id], type: sequelize.QueryTypes.CALL});
-            
+            try{
+                let complete = await sequelize.query('CALL complete_form(?)',
+                {replacements:[instance_id], type: sequelize.QueryTypes.CALL});
+            }catch(error){
+                console.log(error);
+                res.send({ status : ""});
+            }
         }
 
         if(type === 'milestone') {
             let complete = await sequelize.query('CALL complete_form(?)',
-                 {replacements:[instance_id], type: sequelize.QueryTypes.CALL});
+            {replacements:[instance_id], type: sequelize.QueryTypes.CALL});
         }
 
         if(type === 'attendance') {
@@ -677,6 +666,7 @@ class form {
             instanceList = await sequelize.query('CALL get_user_instances(?)', 
             {replacements : [ user_id ], type : sequelize.QueryTypes.CALL});
         }catch(error){
+            console.log(error);
             res.send({status : "Get Instances Failed"});
         }
 
@@ -687,8 +677,7 @@ class form {
     // 1 = everyone in a course (sd1 : 'summer', year : 2019).
     // 2 = groups, group IDs will be sent.
     // 3 = individual users, list of users will be sent.
-    static async assignForm(req, res, next)
-    {
+    static async assignForm(req, res, next){
         
         let status = {};
         if(req.body.code === 1)
