@@ -2,30 +2,106 @@ const { sequelize } = require('../models');
 
 class teamInfo {
 
+    // This will return team information based on the user type.
+    // If coordinator, then all teams with coordinator_id.
+    // If advisor, then only one team.
     static async getAllTeams(req, res, next) {
-        res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
+        const { user_id } = req.body;
 
-        await sequelize.query('CALL get_all_teams();', {type: sequelize.QueryTypes.CALL})
-            .then(result => res.json(result))
-            .catch(error => {
-                console.log(error);
-                res.send({ status: "Request failed" });
-            });            
+        // Placeholder for the team(s) returned from the DB.
+        let teamList;
+        
+        // Get the teams based on user_id. 
+        try{
+            teamList = await sequelize.query('CALL get_all_teams(?);', 
+            {replacements: [ user_id ], type: sequelize.QueryTypes.CALL});
+        }catch(error){
+            res.send({status : "Get All Teams Failed"});
+            console.log("Get All Teams Failed");
+        }
+
+        // Return the list to the frontend.
+        res.send({team : teamList});   
     }
+
+    static async createTeam(req,res,next){
+
+        const {user_id, project_name, description, sd1_semester, sd1_year, sd2_semester, sd2_year, sponsor} = req.body;
+        let user_type;
+
+        // Check to see if user_id is type coordinator/
+        try{
+            user_type = await sequelize.query('CALL get_user_type(?)',
+            { replacements : [user_id],
+            type : sequelize.QueryTypes.CALL});
+        }catch(error){
+            console.log("Get User Type Failed");
+            next;
+        }
+
+        console.log("Get User Type Success");
+
+        // If user is not coordinator, return to frontend.
+        if(user_type != 'coordinator'){
+            res.send({status : "User is not Coordinator"});
+        }
+
+        let newTeamID;
+
+        // Insert team.
+        try{
+            let result = await sequelize.query('CALL insert_team(?,?,?,?,?,?,?,?)',
+            { replacements : [description, project_name, sd1_semester, sd1_year, sd2_semester, sd2_year, sponsor, user_id],
+            type : sequelize.QueryTypes.CALL});
+            newTeamID = result[0]['LAST_INSERT_ID()'];
+        }catch(error){
+            console.log("create team failed");
+            res.send({status : "create team failed"});
+        }
+
+        // returns the new team id. 
+        res.send({status : "success", team_id : newTeamID});
+    }
+
+    static async getTeamID(req, res, next){
+        const {user_id} = req.body;
+        let teamid;
+        try{
+            teamid = await sequelize.query('CALL get_team_id(?)',
+            { replacements : [user_id], type: sequelize.QueryTypes.CALL });
+        } catch(error)
+        {
+            console.log("get team id failed");
+            res.send({ status : "get team id failed"});
+        }
+        res.send({ status : "success", team_id : teamid});
+    }
+    //Generates report for advisor
     static async generateReport(req,res,next)
     {
         
         //let sql=`get_team_with_coordinator(?)`
 
         //Case coordinator 
-        //Get teams with co
+        //User ID
         const {user_id}=req.body;
         var report=[];
+        //Current Date
         var date=new Date().toISOString().slice(0,10);
-        //Case advisor 
+        //Get user type
+        //IF advisor 
+        //IF 
         try
         {
-            var sql=`CALL get_advisor_teams(?)`;
+            let user=await sequelize.query ('CALL get_user(?)',{replacements:[user_id],type:sequelize.QueryTypes.CALL});
+            if(user[0].type=='advisor')
+            {
+                var sql=`CALL get_advisor_teams(?)`;
+            }
+            if(user[0].type=='coordinator')
+            {
+                var sql=`CALL get_teams_with_coordinator(?)`;
+            }
             let teams=await sequelize.query (sql,{replacements:[user_id],type:sequelize.QueryTypes.CALL});
             for (let i=0;i<teams.length;i++)
             {
@@ -90,7 +166,7 @@ class teamInfo {
                                         case 'meeting':
                                             break;
                                         case 'quiz':
-                                            if(userAssignments[b].grade<form[threshold])
+                                            if(userAssignments[b].grade<form[0].form_threshold)
                                                 report.push("Member "+teamMembers[a].first_name+" "+teamMembers[a].last_name+" has performed poorly on "+form[0].type +" "+form[0].title)
                                                 break;
                                         case 'task':
@@ -101,7 +177,7 @@ class teamInfo {
                                             break;
                                         case 'survey':
                                             sql=`call get_user_survey_answers(?,?)`;
-                                            let respones=await sequelize.query (sql,{replacements:[userAssignments[b].instance_id,userAssignments[b].user_id]
+                                            let responses=await sequelize.query (sql,{replacements:[userAssignments[b].instance_id,userAssignments[b].user_id]
                                                 ,type:sequelize.QueryTypes.CALL});
                                             for(let i=0;i<responses.length;i++)
                                             {
@@ -140,10 +216,12 @@ class teamInfo {
         if(report!=[])
         {
             res.send(JSON.stringify(report));  
+            //sendEmail(user.email);
         }
         else
         {
             res.send(JSON("Your teams are healthy"));
+            //sendEmail(user.email);
         }
      
     }
