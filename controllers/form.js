@@ -1,5 +1,6 @@
 const { sequelize } = require('../models');
-
+const dice = require('dice-coefficient');
+const levenstein =require('js-levenshtein');
 class form {
 
     static async createForm(req, res, next) {
@@ -381,11 +382,12 @@ class form {
         try{
             form_id = await sequelize.query('CALL get_form_id(?)',
             {replacements : [ instance_id ], type : sequelize.QueryTypes.CALL});
+            form_id=form_id[0]['form_id'];
         }catch(error){
             console.log(error);
             res.send({status : "get form id failed"});
         }
-
+        
         // Get the form type with form_id provided.
         try {
             let result = await sequelize.query('CALL get_form_type(?)', {replacements:[ form_id ], type: sequelize.QueryTypes.CALL});
@@ -424,6 +426,7 @@ class form {
         }
 
         if(type === 'quiz') {
+            const { results } = req.body;
             for(let i = 0; i < results.length; i++){
                 try {
                     let callSurvey = await sequelize.query(`CALL submit_survey(?,?,?,?)`, 
@@ -439,8 +442,8 @@ class form {
                     next;
                 }
             }
-            await quizGrader(user_id,form_id,instance_id,results);
-            
+            let grade=await quizGrader(user_id,form_id,instance_id,results);
+            status.grade=grade.toString();
             
             await triggerCheck(user_id,form_id,instance_id,results);
         }
@@ -458,7 +461,7 @@ class form {
             triggerCheck(user_id,form_id,instance_id,results);
         }
 
-        res.send({status:"Submission worked"});
+        res.send(status);
     
     }
 
