@@ -8,15 +8,15 @@ class studentInfo {
         // Get all students based on user type.
         // Return the first, last, and user_id.
 
-        const { type, user_id } = req.body;
-
+        const { user_id, type } = req.body;
+        
         if(type === 'coordinator')
         {
             try
             {
-                let studentList = await sequelize.query('CALL get_all_students_coordinator(?);', 
+                let studentList = await sequelize.query('CALL get_all_students_coordinator(?)', 
                 {replacements:[ user_id ], type: sequelize.QueryTypes.CALL});
-                
+                console.log(studentList);
                 res.send(studentList);
             }
             catch(error)
