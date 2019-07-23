@@ -89,7 +89,7 @@ router.post('/getInstances', requireAuth, formController.getInstances);
 router.post('/assignForm', requireAuth, formController.assignForm);
 
 // CSV Upload
-router.post('/csvUpload', upload.single('file'), csvUploadController.uploadCSV);
+router.post('/csvUpload', requireAuth, upload.single('file'), csvUploadController.uploadCSV);
 
 // Testing for the frontend JSON.
 router.post('/frontendTest', requireAuth, frontendTestController.frontendTest);
