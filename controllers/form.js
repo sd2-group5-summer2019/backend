@@ -1,6 +1,9 @@
 const { sequelize } = require('../models');
 const dice = require('dice-coefficient');
 const levenstein =require('js-levenshtein');
+const mail=require('./mailer');
+const body="There's an issue with one of your members";
+    const subject="ALERT";
 class form {
 
     static async createForm(req, res, next) {
@@ -75,7 +78,7 @@ class form {
 
                 returnFormID = await sequelize.query(
                     'CALL insert_form(?,?,?,?,?,?)', 
-                    {replacements:[ access_level,description,threshold, title, type, user_id], type: sequelize.QueryTypes.CALL});
+                    {replacements:[ access_level,description, title, type, user_id,threshold], type: sequelize.QueryTypes.CALL});
                 // console.log(returnFormID[0]['LAST_INSERT_ID()']);
                 form_id = returnFormID[0]['LAST_INSERT_ID()'];
                 // console.log(form_id);
@@ -422,7 +425,7 @@ class form {
                 }
             }
             triggerCheck(user_id,form_id,instance_id,results);
-            res.send(status);
+         //   res.send(status);
         }
 
         if(type === 'quiz') {
@@ -430,7 +433,7 @@ class form {
             for(let i = 0; i < results.length; i++){
                 try {
                     let callSurvey = await sequelize.query(`CALL submit_survey(?,?,?,?)`, 
-                        {replacements:[results[i].answer_text,instance_id, results[i].question_id, user_id], type: sequelize.QueryTypes.CALL});
+                        {replacements:[results[i].text,instance_id, results[i].question_id, user_id], type: sequelize.QueryTypes.CALL});
                     // res.send({ status: "Success" });
                     console.log(`Insert ${results[i].question_id} and ${results[i].answer_text}`);
                     status.status2 = "Success"
@@ -443,7 +446,7 @@ class form {
                 }
             }
             let grade=await quizGrader(user_id,form_id,instance_id,results);
-            status.grade=grade.toString();
+            //status.grade=grade.toString();
             
             await triggerCheck(user_id,form_id,instance_id,results);
         }
@@ -745,8 +748,7 @@ class form {
         } catch (error) {
             console.log(error)
         }   
-        var a = keys.length;
-        var b = responses.length;
+    
         let correct=0.0;
         for (let i=0;i<keys.length;i++)
         {
@@ -760,17 +762,16 @@ class form {
                     {
                         case 'multiple_choice':
                         {
-                            if(responses[j].answer_text==keys[i].key_text)
+                            if(responses[j].text==keys[i].key_text)
                             {
                                 correct+=1;
-                                break;
                             }
                             break;
                         }
                         case 'fill_blank':
                         {      
-                                var r=dice(keys[i].key_text,responses[j].answer_text)
-                                var c=levenstein(keys[i].key_text,responses[j].answer_text)
+                                var r=dice(keys[i].key_text,responses[j].text)
+                                var c=levenstein(keys[i].key_text,responses[j].text)
                                 var p=c/keys[i].key_text.length;
                                 if(r>.9||p>.75)
                                 {
@@ -781,10 +782,9 @@ class form {
                         }
                         case 'select':
                         {
-                            if(responses[j].answer_text==keys[i].key_text)
+                            if(responses[j].text==keys[i].key_text)
                             {
                                 correct+=1;
-                                break;
                             }
                             break;
                         }
@@ -804,7 +804,7 @@ class form {
         }
             
         else
-             grade=100;
+             grade=42;
         //Insert Grades
         try {
             var responses = await sequelize.query(
@@ -817,10 +817,11 @@ class form {
         return grade;
     }
 //Checks for trigger and email advisor as needed
-async function triggerCheck(user_id,form_id,instance_id,responses)
+async function triggerCheck(user_id,form_id,instance_id,results)
 {
     let report=[];
     let result;
+    let instance;
     let type;
     var date=new Date().toISOString().slice(0,10);
     try {
@@ -835,9 +836,9 @@ async function triggerCheck(user_id,form_id,instance_id,responses)
         // res.send({ status: "Failed"
      } try {
         //
-        result = await sequelize.query('select * from form_instances where instance_id=?', 
+        instance = await sequelize.query('select * from form_instances where instance_id=?', 
         {replacements:[ instance_id ], type: sequelize.QueryTypes.SELECT});
-        type = result[0]['type'];
+       
         
         
         // res.send({ thisType });
@@ -850,26 +851,30 @@ async function triggerCheck(user_id,form_id,instance_id,responses)
         {
             let question= await sequelize.query('CALL get_form_question(?)', 
             {replacements:[ results[i].question_id ], type: sequelize.QueryTypes.CALL});
-            if(question[0]!=null&&question[0].question_threshold>results[i].text)
+            if(question[0].question_threshold!=null&&question[0].question_threshold>results[i].text)
             {
-              report.push("Member reported poorly on question");  
+                //Insert into alerts array
+              //report.push("Member reported poorly on question");  
             }
         }
     }
     if(type==='quiz')
-    {
-        if(result[0].grade<form[0].form_threshold)
+    {if(form[0]!=undefined)
+        if(form[0].form_threshold!=null&&instance[0].grade<form[0].form_threshold)
         {
-            report.push("Member Has Performed poorly on a quiz");
+            //Insert into alerts array
+            //report.push("Member Has Performed poorly on a quiz");
         }
     }
-    if(result[0].end_date<date)
+    if(instance[0].end_date<date)
     {
-        report.push("Member failed to submit "+type+" on time");
+        //Insert into alerts array
+        //report.push("Member failed to submit "+type+" on time");
     }
     let advisorID= await sequelize.query(`CALL get_student_advisor(?)`,{replacements:[user_id],
     type:sequelize.QueryTypes.CALL});
     //Email report
-    //sendEmail(advisorID[0]['email'],"Status Report",body);
-}
+    
+    //mail.sendEmail(advisorID[0]['email'],subject,body);
+} 
 module.exports = form;
