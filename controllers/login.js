@@ -2,6 +2,9 @@ const { sequelize } = require('../models');
 const jwt = require('jsonwebtoken');
 const config = require('../config/config');
 const bcrypt = require('bcrypt');
+const uuid = require('uuidv4');
+const mail = require('./mailer');
+const verifyStudent = require('../emails/verifyStudentEmail');
 const saltRounds = 10;
 
 function tokenForUser(user) {
@@ -14,16 +17,13 @@ function tokenForUser(user) {
   return token;
 }
 
-// Return true if oldPass is valid
-// Return false if not valid.
-async function changePassword(oldPass, dbHash) {
-    console.log('Checking Password');
-    const match = await bcrypt.compare(oldPass, dbHash);
+async function checkPassword(old_password, db_hash) {
+    const match = await bcrypt.compare(old_password, db_hash);
 
     if(match) return true;
 
     return false;
-}  
+}
 
 // ASYNC/AWAIT function to compare user input password vs the db hash
 async function comparePassword(inputPassword, dbHash, res) {
@@ -41,7 +41,7 @@ async function comparePasswordSecure(inputPassword, dbHash, result, token, res) 
     const match = await bcrypt.compare(inputPassword, dbHash);
     const user_id = result.user_id;
     const type = result.type;
-
+        console.log(type);
     if(match) {
         res.send({ 
             user_id: user_id,
@@ -93,7 +93,10 @@ class login {
                     res.send({ status: "Failure" });
                 }
             })
-            .catch(error => console.log(error));
+            .catch(error => {
+                console.log(error);
+                res.send({ status: "Failure" });
+            });
     }
 
     static async changePassword(req, res, next) {
@@ -110,7 +113,7 @@ class login {
             // console.log('Got user');
             if(result[0] !== undefined) {
                 if(result[0]['username'] === username) {
-                    let change = await changePassword(old_password, result[0]['password']);
+                    let change = await checkPassword(old_password, result[0]['password']);
 
                     console.log(change);
                     if(!change) {
@@ -125,7 +128,6 @@ class login {
                         catch(error) {
                             res.send({ status: "Update Password Failed" });
                             console.log(error);
-                            next;
                         }
                     }
                 }
@@ -137,6 +139,54 @@ class login {
         catch(error) {
             console.log(error);
             res.send({ status: "MySQL Error" });
+        }
+    }
+
+    static async verifyStudentEmail(req, res, next) {
+        const { username } = req.body;
+        const auth_code = uuid();
+
+        console.log(username);
+        // Generate a token
+        const token = tokenForUser(username);
+        // console.log(token);
+        // console.log(auth_code);
+
+        // First check if verified
+        // If they already are, send { status: "Already verified" } => redirect them to standard login page
+        try {
+            let result = await sequelize.query(`CALL get_student_verification(?)`, {replacements:[username], type: sequelize.QueryTypes.CALL});
+            console.log(result[0]);
+            if(result[0] !== undefined) {
+                if(result[0]['username'] === username) {
+                    // Check if they are already verified
+                    if(result[0]['is_verified'] === 1)
+                        res.send({ status: "User Already Verified" });
+
+                    try {
+                        await sequelize.query(`CALL insert_auth_code(?,?)`, {replacements:[auth_code, username], type: sequelize.QueryTypes.CALL});
+                        let body = verifyStudent.body + auth_code;
+                        mail.sendEmail(result[0]['email'], verifyStudent.subject, body);
+                        res.send({ 
+                            token: token
+                        });
+                    }
+                    catch(error) {
+                        res.send({ status: "Failed" });
+                        console.log(error);
+                    }
+                }
+                else {
+                    res.json("USER NOT STUDENT");
+                }
+            }
+            else {
+                res.send({ status: "User Not Found" });
+            }
+        } 
+        catch(error) {
+            res.send({ status: "MySQL Error" });
+            console.log(error);
         }
     }
 }

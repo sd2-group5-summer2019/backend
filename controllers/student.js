@@ -8,15 +8,15 @@ class studentInfo {
         // Get all students based on user type.
         // Return the first, last, and user_id.
 
-        const { type } = req.body;
-
+        const { user_id, type } = req.body;
+        
         if(type == 'coordinator')
         {
             try
             {
-                let studentList = await sequelize.query('CALL get_all_students_coordinator(?);', 
+                let studentList = await sequelize.query('CALL get_all_students_coordinator(?)', 
                 {replacements:[ user_id ], type: sequelize.QueryTypes.CALL});
-                
+                console.log(studentList);
                 res.send(studentList);
             }
             catch(error)
@@ -41,7 +41,40 @@ class studentInfo {
                 res.send({ status : "Get Students Failed" });
             }
         }          
-    }   
+    }  
+    
+    // Students will be inactive and not verified.
+    // Will return the new student id if inserted.
+    static async insertStudent(res, req, next){
+        const { degree_id, sd1_term, sd1_year, sd2_term, sd2_year, team_id, user_id } = req.body;
+
+        let lastInsertID;
+
+        try{
+            lastInsertID = await sequelize.query('CALL insert_student(?,?,?,?,?,?,?)',
+            { replacements : [degree_id, sd1_term, sd1_year, sd2_term, sd2_year, team_id, user_id],
+            type: sequelize.QueryTypes.CALL});
+        }catch(error){
+            console.log("insert student failed");
+            res.send({status : "insert student failed"});
+        }
+        res.send({status : "insert student success", newStudentID : lastInsertID});
+    }
+
+    static async updateStudent(){
+        
+        const { degree_id, sd1_term, sd1_year, sd2_term, sd2_year, team_id, user_id } = req.body;
+
+        try{
+            await sequelize.query('CALL update_student(?,?,?,?,?,?)',
+            { replacements: [degree_id, sd1_term, sd1_year, sd2_term, sd2_year, team_id, user_id],
+            types: sequelize.QueryTypes.CALL});
+        }catch(error){
+            console.log("update student failed");
+            res.send({status : "update student failed"});
+        }
+        res.send({status : "update student success"});
+    }
 }
 
 module.exports = studentInfo;

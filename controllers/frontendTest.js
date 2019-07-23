@@ -2,7 +2,13 @@ const { sequelize } = require('../models');
 
 class frontendTest {
     static async frontendTest(req, res, next) {
-        res.send(req.body);
+
+        let assignments = [
+            {title:'title1', form_id:'1', complete:'true'},
+            {title:'title2', form_id:'6', complete:'true'},
+            {title:'title3', form_id:'7', complete:'true'}
+        ]
+        res.send(assignments);
         
         /*
         res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
