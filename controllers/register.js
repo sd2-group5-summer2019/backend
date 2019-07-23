@@ -3,6 +3,8 @@ const bcrypt = require('bcrypt');
 const uuid = require('uuidv4');
 const mail = require('./mailer');
 // const verifyStudent = require('../models/verifyStudentEmail');
+const subject = 'Verification Email';
+let body = 'This the code: ';
 const saltRounds = 10;
 
 class register {
@@ -79,8 +81,9 @@ class register {
 
                     try {
                         await sequelize.query(`CALL insert_auth_code(?,?)`, {replacements:[auth_code, username], type: sequelize.QueryTypes.CALL});
-                        // mail.sendEmail(result[0]['email'], verifyStudentEmail.subject, verifyStudentEmail.body);
-                        next;
+                        body = body + auth_code;
+                        mail.sendEmail(result[0]['email'], subject, body);
+                        res.send({ status: "success" });
                     }
                     catch(error) {
                         res.send({ status: "Failed" });
@@ -107,8 +110,14 @@ class register {
             if(result[0] !== undefined) {
                 if(result[0]['username'] === username) {
                     if(result[0]['auth_code'] === auth_code) {
-                        await sequelize.query(`CALL student_verified(?)`, {replacements:[username], type: sequelize.QueryTypes.CALL});
-                        res.send({ status: "Success" });
+                        try {
+                            await sequelize.query(`CALL student_verified(?)`, {replacements:[username], type: sequelize.QueryTypes.CALL});
+                            res.send({ status: "Success" });
+                        }
+                        catch(error) {
+                            console.log(error);
+                            res.send({ status: "Student verify fail" });
+                        }
                     }
                     else {
                         res.send({ status: "Incorrect code" });

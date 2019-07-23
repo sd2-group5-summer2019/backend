@@ -13,6 +13,14 @@ function tokenForUser(user) {
   return token;
 }
 
+async function checkPassword(old_password, db_hash) {
+    const match = await bcrypt.compare(old_password, db_hash);
+
+    if(match) return true;
+
+    return false;
+}
+
 // ASYNC/AWAIT function to compare user input password vs the db hash
 async function comparePassword(inputPassword, dbHash, res) {
     const match = await bcrypt.compare(inputPassword, dbHash)
@@ -89,6 +97,7 @@ class login {
         const { username, old_password, new_password } = req.body;
         
         // Generate a salt and then hash the password
+        const saltRounds = 10;
         const salt = await bcrypt.genSalt(saltRounds);
         const hash = await bcrypt.hash(new_password, salt);
 
@@ -98,7 +107,7 @@ class login {
             // console.log('Got user');
             if(result[0] !== undefined) {
                 if(result[0]['username'] === username) {
-                    let change = await changePassword(old_password, result[0]['password']);
+                    let change = await checkPassword(old_password, result[0]['password']);
 
                     console.log(change);
                     if(!change) {
@@ -113,7 +122,6 @@ class login {
                         catch(error) {
                             res.send({ status: "Update Password Failed" });
                             console.log(error);
-                            next;
                         }
                     }
                 }
