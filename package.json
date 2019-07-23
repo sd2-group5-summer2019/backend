@@ -12,9 +12,15 @@
     "bcrypt": "^3.0.6",
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",
+<<<<<<< HEAD
     "csv-parse": "^4.4.3",
+=======
+    "csv-parser": "^2.3.0",
+    "dice-coefficient": "^1.0.4",
+>>>>>>> 0e08e661a7610450759b821107c2988c4b27ea0f
     "express": "^4.16.4",
     "fs": "0.0.1-security",
+    "js-levenshtein": "^1.1.6",
     "jsonwebtoken": "^8.5.1",
     "multer": "^1.4.2",
     "mysql2": "^1.6.5",
