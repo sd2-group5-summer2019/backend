@@ -18,13 +18,13 @@ class register {
         try{
             let result = await sequelize.query(`CALL insert_user(?,?,?,?,?,?);`, 
             {replacements:[username, hash, type, last_name, first_name, email], type: sequelize.QueryTypes.CALL});
-            new_user_id = result[o]['LAST_INSERT_ID()'];
+            new_user_id = result[0]['LAST_INSERT_ID()'];
         }catch(error){
             console.log(error);
             if(error.parent.code === 'ER_DUP_ENTRY')
-                res.send({ err : "Duplicate"});
+                res.send({ err : "Duplicate" });
             else
-                res.send({ status : "Unkonw error"});
+                res.send({ status : "Unkonw error" });
         }
 
         // Based on user type, insert into respected table.
@@ -34,6 +34,7 @@ class register {
                 {replacements : [1, new_user_id],
                 type : sequelize.QueryTypes.CALL});
             }catch(error){
+                res.send({ status: "Insert error" });
                 console.log(error);
             }
         }
@@ -44,6 +45,7 @@ class register {
                 {replacements : [1, sd1_term, sd1_year, sd2_term, sd2_year, null, new_user_id],
                 type : sequelize.QueryTypes.CALL});
             }catch(error){
+                res.send({ status: "Insert error" });
                 console.log(error);
             }
         }
@@ -53,6 +55,7 @@ class register {
                 {replacements : [null, new_user_id],
                 type : sequelize.QueryTypes.CALL});
             }catch(error){
+                res.send({ status: "Insert error" });
                 console.log(error);
             }
         }
@@ -82,7 +85,6 @@ class register {
                     catch(error) {
                         res.send({ status: "Failed" });
                         console.log(error);
-                        next;
                     }
                 }
             }
@@ -93,7 +95,6 @@ class register {
         catch(error) {
             res.send({ status: "MySQL Error" });
             console.log(error);
-            next;
         }
     }
 
@@ -121,7 +122,6 @@ class register {
         catch(error) {
             res.send({ status: "Failed" });
             console.log(error);
-            next;
         }
     }
 
@@ -144,7 +144,6 @@ class register {
                     catch(error) {
                         res.send({ status: "Update Password Failed" });
                         console.log(error);
-                        next;
                     }
                 }
             }
@@ -155,7 +154,6 @@ class register {
         catch(error) {
             res.send({ status: "Failed" });
             console.log(error);
-            next;
         }
     }
 }
