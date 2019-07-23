@@ -491,7 +491,10 @@ class form {
                 }
             }
 
+            let grade = await quizGrader(user_id, form_id, instance_id, results);
+            status.grade = grade;
             
+            await triggerCheck(user_id, form_id, instance_id, results);
 
             /*
             let quiz_answer_keys;
@@ -842,6 +845,7 @@ class form {
 //This grades submitted quizzes and updates the instance
     async function quizGrader(user_id,form_id,instance_id,responses)
     {
+        // grabs the answers keys to a form id.
         try {
             var keys = await sequelize.query(
                 'CALL get_quiz_key_answers(?)', 
@@ -849,13 +853,23 @@ class form {
         } catch (error) {
             console.log(error)
         }   
+
+        // a and b are for lengths.
         var a = keys.length;
         var b = responses.length;
         let correct=0.0;
+
+        console.log("a = " + a + ", b = " + b); 
+
+        // Loop through each key.
         for (let i=0;i<keys.length;i++)
         {
+
+            // Loop through each answer.
             for (let j=0;j<responses.length;j++)
             {
+
+                // Check to see if question matches answer.
                 if(responses[j].question_id==keys[i].question_id)
                 {
                     //Based on question type
@@ -864,10 +878,10 @@ class form {
                     {
                         case 'multiple_choice':
                         {
-                            if(responses[j].answer_text==keys[i].key_text)
+
+                            if(responses[j].text==keys[i].key_text)
                             {
-                                correct+=1;
-                                break;
+                                correct++;
                             }
                             break;
                         }
@@ -887,8 +901,7 @@ class form {
                         {
                             if(responses[j].answer_text==keys[i].key_text)
                             {
-                                correct+=1;
-                                break;
+                                correct++;
                             }
                             break;
                         }
@@ -918,43 +931,51 @@ class form {
         } catch (error) {
             console.log(error);
         }
+        console.log(grade);
         return grade;
     }
 //Checks for trigger and email advisor as needed
-async function triggerCheck(user_id,form_id,instance_id,responses)
+async function triggerCheck(user_id,form_id,instance_id,results)
 {
+
     let report=[];
-    let result;
+    let tempResult;
     let type;
     var date=new Date().toISOString().slice(0,10);
+
     try {
         //get type
-        result = await sequelize.query('CALL get_form_type(?)', {replacements:[ form_id ], type: sequelize.QueryTypes.CALL});
+        tempResult = await sequelize.query('CALL get_form_type(?)', {replacements:[ form_id ], type: sequelize.QueryTypes.CALL});
         type = result[0]['type'];
        
     
         // res.send({ thisType });
     } catch(error) {
         console.log(error);
-        // res.send({ status: "Failed"
-     } try {
+        res.send({ status : "failed in trigger"});
+    } 
+     
+    try {
         //
-        result = await sequelize.query('select * from form_instances where instance_id=?', 
+        tempResult = await sequelize.query('select * from form_instances where instance_id=?', 
         {replacements:[ instance_id ], type: sequelize.QueryTypes.SELECT});
-        type = result[0]['type'];
         
         
         // res.send({ thisType });
     } catch(error) {
         console.log(error);
+        res.send({ status : "failed in trigger"});
     }
+    
     if(type==='survey')
     {
+        // loop through instance
         for (let i=0;i<results.length;i++)
         {
-            let question= await sequelize.query('CALL get_form_question(?)', 
+            let question = await sequelize.query('CALL get_form_question(?)', 
             {replacements:[ results[i].question_id ], type: sequelize.QueryTypes.CALL});
-            if(question[0]!=null&&question[0].question_threshold>results[i].text)
+
+            if(question[0] !== undefined && question[0].question_threshold>results[i].text)
             {
               report.push("Member reported poorly on question");  
             }
@@ -971,8 +992,8 @@ async function triggerCheck(user_id,form_id,instance_id,responses)
     {
         report.push("Member failed to submit "+type+" on time");
     }
-    let advisorID= await sequelize.query(`CALL get_student_advisor(?)`,{replacements:[user_id],
-    type:sequelize.QueryTypes.CALL});
+    //let advisorID= await sequelize.query(`CALL get_student_advisor(?)`,{replacements:[user_id],
+    //type:sequelize.QueryTypes.CALL});
     //Email report
     //sendEmail(advisorID[0]['email'],"Status Report",body);
 }
