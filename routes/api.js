@@ -14,10 +14,8 @@ const teamController = require('../controllers/team');
 const sponsorController = require('../controllers/sponsor');
 const formController = require('../controllers/form');
 const frontendTestController = require('../controllers/frontendTest');
-<<<<<<< HEAD
 const registerCSVController = require('../controllers/registerCSV');
-const analyticsController=require('../controllers/analytics');
-=======
+const analyticsController = require('../controllers/analytics');
 const csvUploadController = require('../controllers/csvUpload');
 
 const csvTypes = [
@@ -33,16 +31,16 @@ const csvTypes = [
 ];
 
 const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
+    destination: function(req, file, cb) {
         if (csvTypes.indexOf(file.mimetype)) {
             cb(null, './uploads/')
         } else {
             cb(new Error('Given File is not supported.'));
         }
     },
-    filename: function (req, file, cb) {
+    filename: function(req, file, cb) {
         let date = new Date().toISOString();
-        date = date.slice(0,10);
+        date = date.slice(0, 10);
         let fileName = date + "_" + file.originalname;
         cb(null, fileName);
     }
@@ -50,11 +48,10 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
->>>>>>> 6341c35999e484856d89018472ff0045e0f81b54
 // Login routes
 router.post('/login', loginController.login);
 router.post('/login_secure', loginController.login_secure);
-router.post('/changePassword', loginController. changePassword);
+router.post('/changePassword', loginController.changePassword);
 router.post('/verifyStudentEmail', loginController.verifyStudentEmail);
 
 // Register routes.
@@ -68,7 +65,7 @@ router.post('/insertStudent', requireAuth, studentController.insertStudent);
 router.post('/updateStudent', requireAuth, studentController.updateStudent);
 
 // Taking survey routes.
- router.post('/getSurvey', requireAuth, surveyController.getSurvey);
+router.post('/getSurvey', requireAuth, surveyController.getSurvey);
 // router.post('/submitSurvey', surveyController.submitSurvey);
 
 // Team stuff
