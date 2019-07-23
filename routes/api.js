@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const passportService = require('../services/passport');
 const passport = require('passport');
+const multer = require('multer');
 const requireAuth = passport.authenticate('jwt', { session: false });
 
 // Controllers
@@ -13,10 +14,42 @@ const teamController = require('../controllers/team');
 const sponsorController = require('../controllers/sponsor');
 const formController = require('../controllers/form');
 const frontendTestController = require('../controllers/frontendTest');
+const csvUploadController = require('../controllers/csvUpload');
+
+const csvTypes = [
+    'text/plain',
+    'text/x-csv',
+    'application/vnd.ms-excel',
+    'application/csv',
+    'application/x-csv',
+    'text/csv',
+    'text/comma-separated-values',
+    'text/x-comma-separated-values',
+    'text/tab-separated-values',
+];
+
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        if (csvTypes.indexOf(file.mimetype)) {
+            cb(null, './uploads/')
+        } else {
+            cb(new Error('Given File is not supported.'));
+        }
+    },
+    filename: function (req, file, cb) {
+        let date = new Date().toISOString();
+        date = date.slice(0,10);
+        let fileName = date + "_" + file.originalname;
+        cb(null, fileName);
+    }
+});
+
+const upload = multer({ storage });
 
 // Login routes
 router.post('/login', loginController.login);
 router.post('/login_secure', loginController.login_secure);
+router.post('/changePassword', loginController. changePassword);
 
 // Register routes.
 router.post('/register', registerController.register);
@@ -54,6 +87,9 @@ router.post('/getAnswers', formController.getAnswers);
 router.post('/getAllForms', formController.getAllForms)
 router.post('/getInstances', formController.getInstances);
 router.post('/assignForm', formController.assignForm);
+
+// CSV Upload
+router.post('/csvUpload', upload.single('file'), csvUploadController.uploadCSV);
 
 // Testing for the frontend JSON.
 router.post('/frontendTest', frontendTestController.frontendTest);

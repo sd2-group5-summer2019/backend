@@ -3,6 +3,8 @@ const bcrypt = require('bcrypt');
 const uuid = require('uuidv4');
 const mail = require('./mailer');
 // const verifyStudent = require('../models/verifyStudentEmail');
+const subject = 'Verification Email';
+let body = 'This the code: ';
 const saltRounds = 10;
 
 class register {
@@ -18,13 +20,13 @@ class register {
         try{
             let result = await sequelize.query(`CALL insert_user(?,?,?,?,?,?);`, 
             {replacements:[username, hash, type, last_name, first_name, email], type: sequelize.QueryTypes.CALL});
-            new_user_id = result[o]['LAST_INSERT_ID()'];
+            new_user_id = result[0]['LAST_INSERT_ID()'];
         }catch(error){
             console.log(error);
             if(error.parent.code === 'ER_DUP_ENTRY')
-                res.send({ err : "Duplicate"});
+                res.send({ err : "Duplicate" });
             else
-                res.send({ status : "Unkonw error"});
+                res.send({ status : "Unkonw error" });
         }
 
         // Based on user type, insert into respected table.
@@ -34,6 +36,7 @@ class register {
                 {replacements : [1, new_user_id],
                 type : sequelize.QueryTypes.CALL});
             }catch(error){
+                res.send({ status: "Insert error" });
                 console.log(error);
             }
         }
@@ -44,6 +47,7 @@ class register {
                 {replacements : [1, sd1_term, sd1_year, sd2_term, sd2_year, null, new_user_id],
                 type : sequelize.QueryTypes.CALL});
             }catch(error){
+                res.send({ status: "Insert error" });
                 console.log(error);
             }
         }
@@ -53,6 +57,7 @@ class register {
                 {replacements : [null, new_user_id],
                 type : sequelize.QueryTypes.CALL});
             }catch(error){
+                res.send({ status: "Insert error" });
                 console.log(error);
             }
         }
@@ -76,13 +81,13 @@ class register {
 
                     try {
                         await sequelize.query(`CALL insert_auth_code(?,?)`, {replacements:[auth_code, username], type: sequelize.QueryTypes.CALL});
-                        // mail.sendEmail(result[0]['email'], verifyStudentEmail.subject, verifyStudentEmail.body);
-                        next;
+                        body = body + auth_code;
+                        mail.sendEmail(result[0]['email'], subject, body);
+                        res.send({ status: "success" });
                     }
                     catch(error) {
                         res.send({ status: "Failed" });
                         console.log(error);
-                        next;
                     }
                 }
             }
@@ -93,7 +98,6 @@ class register {
         catch(error) {
             res.send({ status: "MySQL Error" });
             console.log(error);
-            next;
         }
     }
 
@@ -106,8 +110,14 @@ class register {
             if(result[0] !== undefined) {
                 if(result[0]['username'] === username) {
                     if(result[0]['auth_code'] === auth_code) {
-                        await sequelize.query(`CALL student_verified(?)`, {replacements:[username], type: sequelize.QueryTypes.CALL});
-                        res.send({ status: "Success" });
+                        try {
+                            await sequelize.query(`CALL student_verified(?)`, {replacements:[username], type: sequelize.QueryTypes.CALL});
+                            res.send({ status: "Success" });
+                        }
+                        catch(error) {
+                            console.log(error);
+                            res.send({ status: "Student verify fail" });
+                        }
                     }
                     else {
                         res.send({ status: "Incorrect code" });
@@ -121,7 +131,6 @@ class register {
         catch(error) {
             res.send({ status: "Failed" });
             console.log(error);
-            next;
         }
     }
 
@@ -144,7 +153,6 @@ class register {
                     catch(error) {
                         res.send({ status: "Update Password Failed" });
                         console.log(error);
-                        next;
                     }
                 }
             }
@@ -155,7 +163,6 @@ class register {
         catch(error) {
             res.send({ status: "Failed" });
             console.log(error);
-            next;
         }
     }
 }
