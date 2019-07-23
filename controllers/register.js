@@ -1,10 +1,5 @@
 const { sequelize } = require('../models');
 const bcrypt = require('bcrypt');
-const uuid = require('uuidv4');
-const mail = require('./mailer');
-// const verifyStudent = require('../models/verifyStudentEmail');
-const subject = 'Verification Email';
-let body = 'This the code: ';
 const saltRounds = 10;
 
 class register {
@@ -64,49 +59,13 @@ class register {
         res.send({ status : "success"});
     }
 
-    static async verifyStudentEmail(req, res, next) {
-        const { username } = req.body;
-        const auth_code = uuid();
-
-        // First check if verified
-        // If they already are, send { status: "Already verified" } => redirect them to standard login page
-        try {
-            let result = await sequelize.query(`CALL get_student_verification(?)`, {replacements:[username], type: sequelize.QueryTypes.CALL});
-
-            if(result[0] !== undefined) {
-                if(result[0]['username'] === username) {
-                    // Check if they are already verified
-                    if(result[0]['is_verified'] === 1)
-                        res.send({ status: "User Already Verified" });
-
-                    try {
-                        await sequelize.query(`CALL insert_auth_code(?,?)`, {replacements:[auth_code, username], type: sequelize.QueryTypes.CALL});
-                        body = body + auth_code;
-                        mail.sendEmail(result[0]['email'], subject, body);
-                        res.send({ status: "success" });
-                    }
-                    catch(error) {
-                        res.send({ status: "Failed" });
-                        console.log(error);
-                    }
-                }
-            }
-            else {
-                res.send({ status: "User Not Found" });
-            }
-        } 
-        catch(error) {
-            res.send({ status: "MySQL Error" });
-            console.log(error);
-        }
-    }
-
     static async verifyCode(req, res, next) {
         const { username, auth_code } = req.body;
+        // console.log(req.body);
 
         try {
             let result = await sequelize.query(`CALL get_auth_code(?)`, {replacements:[username], type: sequelize.QueryTypes.CALL});
-
+            // console.log(result[0]);
             if(result[0] !== undefined) {
                 if(result[0]['username'] === username) {
                     if(result[0]['auth_code'] === auth_code) {
