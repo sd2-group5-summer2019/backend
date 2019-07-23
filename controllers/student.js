@@ -75,6 +75,20 @@ class studentInfo {
         }
         res.send({status : "update student success"});
     }
+
+    static async getStudentName() {
+        const { user_id } = request.body;
+
+        let student_name;
+        try{
+            student_name = await sequelize.query('Call get_student_name(?)',
+            { replacements: [user_id], types: sequelize.QueryTypes.CALL });
+        }catch(error){
+            console.log("get student name failed");
+            res.send({status: "get student name failed"});
+        }
+        res.send(student_name);
+    }
 }
 
 module.exports = studentInfo;

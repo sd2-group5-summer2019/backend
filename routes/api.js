@@ -29,6 +29,7 @@ router.post('/setNewPassword', registerController.setNewPassword);
 router.post('/getAllStudents', studentController.getAllStudents);
 router.post('/insertStudent', studentController.insertStudent);
 router.post('/updateStudent', studentController.updateStudent);
+router.post('/getStudentName', studentController.getStudentName);
 
 // Taking survey routes.
  router.post('/getSurvey', surveyController.getSurvey);
@@ -39,6 +40,7 @@ router.post('/getAllTeams', teamController.getAllTeams);
 router.post('/generateReport', teamController.generateReport);
 router.post('/createTeam', teamController.createTeam);
 router.post('/getTeamID', teamController.getTeamID);
+router.post('/getTeamMembers', teamController.getTeamMembers);
 
 // Sponsor stuff
 router.post('/getAllSponsors', sponsorController.getAllSponsors);

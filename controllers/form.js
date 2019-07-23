@@ -7,7 +7,7 @@ class form {
 
         // Check the form type.
         const { type } = req.body;
-
+        console.log(type)
         // insert_form will return the last form inserted.
         let returnFormID;
 
@@ -165,7 +165,7 @@ class form {
                 // Insert the form and return is the new ID.
                 returnFormID = await sequelize.query(
                     'CALL insert_form(?,?,?,?,?,?)', 
-                    {replacements:[ access_level, description, title, type, user_id, form_threshold ], type: sequelize.QueryTypes.CALL});
+                    {replacements:[ access_level, description, title, type, user_id, null ], type: sequelize.QueryTypes.CALL});
                     
                 form_id = returnFormID[0]['LAST_INSERT_ID()'];
                 // console.log(form_id);
@@ -194,7 +194,7 @@ class form {
 
         if(type === 'task') {
             
-            const{ access_level, description, end_date, start_date, title, user_id, milestone_instance_id, form_threshold, assign_to_id } = req.body;
+            const{ access_level, description, end_date, start_date, title, user_id, milestone_instance_id, form_threshold, assign_to_id, team_id } = req.body;
 
             let temp_task_instance_id;
 
@@ -229,8 +229,8 @@ class form {
 
             // Create the instance.
             try{
-                let result = await sequelize.query('CALL insert_form_instance_user(?,?,?,?)',
-                { replacements: [ end_date, form_id, start_date, assign_to_id ],
+                let result = await sequelize.query('CALL insert_form_instance_user_and_team(?,?,?,?,?)',
+                { replacements: [ end_date, form_id, start_date, assign_to_id, team_id ],
                 type : sequelize.QueryTypes.CALL});
                 console.log(result);
                 temp_task_instance_id = result[0]['LAST_INSERT_ID()'];
