@@ -83,7 +83,7 @@ class form {
                 } catch (error) {
                     console.log(returnFormID);
                     status.status1 = "Failed";
-                    res.send(status);
+                    next;
                 }
 
                 // Loop through and insert questions.
@@ -123,8 +123,10 @@ class form {
                         // Add answer keys for each question.
                         if (questions[i].question_type != 'select' && questions[i].question_type != 'free_response') {
                             for (let j = 0; j < questions[i].answers.length; j++) {
-                                console.log(questions[i]);
-                                await sequelize.query('CALL insert_answer_key(?,?,?)', { replacements: [questions[i].answers[j].answer, question_id, questions[i].answers[j].isCorrect], type: sequelize.QueryTypes.CALL });
+                                await sequelize.query('CALL insert_answer_key(?,?,?)', {
+                                    replacements: [questions[i].answers[j].answer_text, question_id, questions[i].answers[j].is_correct],
+                                    type: sequelize.QueryTypes.CALL
+                                })
                                 status.status2 = " Insert Answer Key";
                             }
                         }
@@ -249,10 +251,7 @@ class form {
 
                 try {
                     returnFormID = await sequelize.query(
-                        'CALL insert_form(?,?,?,?,?,?)', {
-                            replacements: [access_level, description, title, type, user_id, null],
-                            type: sequelize.QueryTypes.CALL
-                        });
+                        'CALL insert_form(?,?,?,?,?,?)', { replacements: [access_level, description, null, title, type, user_id], type: sequelize.QueryTypes.CALL });
                     // console.log(returnFormID[0]['LAST_INSERT_ID()']);
                     form_id = returnFormID[0]['LAST_INSERT_ID()'];
                     // console.log(form_id);
@@ -275,23 +274,27 @@ class form {
                     next;
                 }
 
-                if (type === 'attendance') {
-                    // Frontend should send instance_id, list of users with
-                    // user_id, did_attend, and reason.
-                    const { instance_id, users } = req.body;
-                    try {
-                        let meeting = await sequelize.query('CALL meeting_complete(?)', { replacements: [instance_id], type: sequelize.QueryTypes.CALL });
-                        for (let i = 0; i < users.length; i++) {
-                            let insert = await sequelize.query('CALL insert_form_attendance(?,?,?,?)', { replacements: [users[i].did_attend, instance_id, users[i].reason, users[i].user_id], type: sequelize.QueryTypes.CALL });
-                        }
-                    } catch (error) {
-                        console.log(error);
-                    }
-                    res.send({ status: "Attendance success" });
 
-                }
+                res.send(status);
 
             }
+
+            if (type === 'attendance') {
+                // Frontend should send instance_id, list of users with
+                // user_id, did_attend, and reason.
+                const { instance_id, users } = req.body;
+                try {
+                    let meeting = await sequelize.query('CALL meeting_complete(?)', { replacements: [instance_id], type: sequelize.QueryTypes.CALL });
+                    for (let i = 0; i < users.length; i++) {
+                        let insert = await sequelize.query('CALL insert_form_attendance(?,?,?,?)', { replacements: [users[i].did_attend, instance_id, users[i].reason, users[i].user_id], type: sequelize.QueryTypes.CALL });
+                    }
+                } catch (error) {
+                    console.log(error);
+                }
+                res.send({ status: "Attendance success" });
+
+            }
+
         }
         //Retrieving Questions From Quizzes and surveys
     static async getForm(req, res, next) {
@@ -299,12 +302,6 @@ class form {
         const { form_id } = req.body;
 
         let result = {
-            "form": {
-                "questions": [
-                    { "answers": [{}] }
-                ],
-
-            },
 
         };
         let questions;
@@ -435,7 +432,10 @@ class form {
                     next;
                 }
             }
-            triggerCheck(user_id, form_id, instance_id, results);
+            let complete = await sequelize.query('CALL complete_form(?)', { replacements: [instance_id], type: sequelize.QueryTypes.CALL });
+            await triggerCheck(user_id, form_id, instance_id, results);
+
+
             //   res.send(status);
         }
 
@@ -469,6 +469,7 @@ class form {
         if (type === 'milestone') {
             //Update instance to completed
             let complete = await sequelize.query('CALL complete_form(?)', { replacements: [instance_id], type: sequelize.QueryTypes.CALL });
+            triggerCheck(user_id, form_id, instance_id, results);
         }
 
         res.send(status);
@@ -620,7 +621,6 @@ class form {
             try {
                 instanceList = await sequelize.query('CALL get_user_instances(?)', { replacements: [user_id], type: sequelize.QueryTypes.CALL });
             } catch (error) {
-                console.log(error);
                 res.send({ status: "Get Instances Failed" });
             }
 
@@ -736,83 +736,65 @@ async function quizGrader(user_id, form_id, instance_id, responses) {
         console.log(error)
     }
 
-    // a and b are for lengths.
-    var a = keys.length;
-    var b = responses.length;
-    let correct = 0.0;
+    //get # of distinct question_ids
+    let final = 0.0;
+    let distinct_set = new Set(keys.map(x => x.question_id));
+    let distinct_keys = Array.from(distinct_set);
+    for (let i = 0; i < distinct_keys.length; i++) {
+        let correct = 0;
+        //Get subset  of responses via filter where their question id= current key's question id
+        let response_subset = responses.filter(elem => elem.question_id == distinct_keys[i]);
+        //Get subset  of keys via filter where their question id= current key's question id
+        let key_subset = keys.filter(elem => elem.question_id == distinct_keys[i]);
+        //Verifying subset's length is <= key subset's length -otherwise continue
+        if (response_subset.length > key_subset.length)
+            continue;
+        //Going through key_subset and comparing it against every element in subset
+        for (let k = 0; k < key_subset.length; k++) {
 
-    console.log("a = " + a + ", b = " + b);
-
-    // Loop through each key.
-    for (let i = 0; i < keys.length; i++) {
-
-        // Loop through each answer.
-        for (let j = 0; j < responses.length; j++) {
-
-            // Check to see if question matches answer.
-            if (responses[j].question_id == keys[i].question_id) {
-                //Based on question type
-                //Multi-Absolute Compare
-                switch (keys[i].question_type) {
-                    case 'multiple_choice':
-                        {
-
-                            if (responses[j].text == keys[i].key_text) {
-                                correct++;
-                            }
-                            break;
-                        }
-                    case 'fill_blank':
-                        {
-                            var r = dice(keys[i].key_text, responses[j].text)
-                            var c = levenstein(keys[i].key_text, responses[j].text)
-                            var p = c / keys[i].key_text.length;
-                            if (r > .9 || p > .75) {
-                                correct += 1;
-                            }
-
-                            break;
-                        }
-                    case 'select':
-                        {
-                            if (responses[j].text == keys[i].key_text) {
-                                correct += 1;
-                            }
-                            break;
-                        }
-                    case 'free_response':
-                        correct += 1;
-                        break;
-                    default:
-                        break;
+            for (let j = 0; j < response_subset.length; j++) {
+                //Multiple Choice Type-Absolute comparison 
+                if (key_subset[k].question_type === 'multiple_choice') {
+                    if (key_subset[k].key_text == response_subset[j].text) {
+                        correct++;
+                    }
                 }
-            }
-        }
-        let grade;
-        if (keys.length != 0) {
-            grade = (correct / keys.length) * 100;
-        } else
-            grade = 100;
-        //Insert Grades
-        try {
-            var responses = await sequelize.query(
-                'Update form_instances SET grade = ? ,is_complete = 1 where instance_id =?', { replacements: [grade, instance_id], type: sequelize.QueryTypes.Update })
+                //Select Type-Absolute comparison 
+                if (key_subset[k].question_type === 'select') {
+                    if (key_subset[k].key_text == response_subset[j].text) {
+                        correct++;
+                    }
+                }
+                //Free Response Type - Impossible to autograde effectively, so correct by default
+                if (key_subset[k].question_type === 'free_response') {
+                    correct++;
+                }
+                //Fill Blank Type - Compare using dice coeffiecent and levenstein distances
+                if (key_subset[k].question_type === 'fill_blank') {
+                    let coeffiecent = dice(response_subset[j].text, key_subset[k].key_text);
+                    let distance = levenstein(response_subset[j].text, key_subset[k].key_text);
+                    //Prevent false correct for really short answers
 
-        } catch (error) {
-            console.log(error);
+                    if (coeffiecent >= .8) {
+                        correct++;
+
+                    }
+                }
+
+            }
+
         }
-        console.log(grade);
-        return grade;
-    }
+        final += correct / (key_subset.length);
+    };
     let grade;
     if (keys.length != 0) {
-        grade = (correct / keys.length) * 100;
+        grade = (final /= distinct_keys.length) * 100;
     } else
         grade = 42;
     //Insert Grades
     try {
         var responses = await sequelize.query(
-            'Update form_instances SET grade = ? ,is_complete = 1 where instance_id =?', { replacements: [grade, instance_id], type: sequelize.QueryTypes.Update })
+            'CALL complete_quiz(?,?)', { replacements: [grade, instance_id], type: sequelize.QueryTypes.Update })
 
     } catch (error) {
         console.log(error);
@@ -830,7 +812,7 @@ async function triggerCheck(user_id, form_id, instance_id, results) {
     try {
         //get type
         tempResult = await sequelize.query('CALL get_form_type(?)', { replacements: [form_id], type: sequelize.QueryTypes.CALL });
-        type = result[0]['type'];
+        type = tempResult[0]['type'];
 
 
         // res.send({ thisType });
@@ -840,7 +822,7 @@ async function triggerCheck(user_id, form_id, instance_id, results) {
     }
     try {
         //
-        instance = await sequelize.query('call get_form_instance(?,?,?)', { replacements: [form_id, instance_id, user_id], type: sequelize.QueryTypes.SELECT });
+        instance = await sequelize.query('CALL get_form_instance(?,?,?)', { replacements: [form_id, instance_id, user_id], type: sequelize.QueryTypes.SELECT });
 
 
 
@@ -854,7 +836,10 @@ async function triggerCheck(user_id, form_id, instance_id, results) {
             let question = await sequelize.query('CALL get_form_question(?)', { replacements: [results[i].question_id], type: sequelize.QueryTypes.CALL });
             if (question[0].question_threshold != null && question[0].question_threshold > results[i].text) {
                 //Insert into alerts array
-                //report.push("Member reported poorly on question");  
+                let newAlert = await sequelize.query(`CALL insert_alert_history(?,?)`, {
+                    replacements: [instance_id, advisorID[0].user_id],
+                    type: sequelize.QueryTypes.CALL
+                });
             }
         }
     }
@@ -862,17 +847,27 @@ async function triggerCheck(user_id, form_id, instance_id, results) {
         if (form[0] != undefined)
             if (form[0].form_threshold != null && instance[0].grade < form[0].form_threshold) {
                 //Insert into alerts array
-                //report.push("Member Has Performed poorly on a quiz");
+                let newAlert = await sequelize.query(`CALL insert_alert_history(?,?)`, {
+                    replacements: [instance_id, advisorID[0].user_id],
+                    type: sequelize.QueryTypes.CALL
+                });
             }
     }
     if (instance[0].end_date < date) {
         //Insert into alerts array
-        //report.push("Member failed to submit "+type+" on time");
+        report.push("Member failed to submit " + type + " on time");
+        let newAlert = await sequelize.query(`CALL insert_alert_history(?,?)`, {
+            replacements: [instance_id, advisorID[0].user_id],
+            type: sequelize.QueryTypes.CALL
+        });
     }
-    let advisorID = await sequelize.query(`CALL get_student_advisor(?)`, {
-        replacements: [user_id],
-        type: sequelize.QueryTypes.CALL
-    });
+
+    if (report.length > 0) {
+        let newAlert = await sequelize.query(`CALL insert_alert_history(?,?)`, {
+            replacements: [instance_id, advisorID[0].user_id],
+            type: sequelize.QueryTypes.CALL
+        });
+    }
     //Email report
 
     //mail.sendEmail(advisorID[0]['email'],subject,body);
