@@ -1,5 +1,7 @@
 const { sequelize } = require('../models');
-
+const mail = require('./mailer');
+const body = "There's an issue with one of your members";
+const subject = "ALERT";
 class teamInfo {
 
     // This will return team information based on the user type.
@@ -68,23 +70,34 @@ class teamInfo {
     }
 
     static async getTeamID(req, res, next) {
+        const { user_id } = req.body;
+        let teamid;
+        try {
+            teamid = await sequelize.query('CALL get_team_id(?)', { replacements: [user_id], type: sequelize.QueryTypes.CALL });
+        } catch (error) {
+            console.log("get team id failed");
+            res.send({ status: "get team id failed" });
+        }
+        res.send({ status: "success", team_id: teamid });
+    }
+    static async sendEmail(req, res, next) {
             const { user_id } = req.body;
-            let teamid;
-            try {
-                teamid = await sequelize.query('CALL get_team_id(?)', { replacements: [user_id], type: sequelize.QueryTypes.CALL });
-            } catch (error) {
-                console.log("get team id failed");
-                res.send({ status: "get team id failed" });
-            }
-            res.send({ status: "success", team_id: teamid });
+            let tempResult = await sequelize.query('CALL get_alerts(?)', { replacements: [user_id], type: sequelize.QueryTypes.CALL });
+            console.log(tempResult);
+            let tempUser = await sequelize.query('CALL get_user(?)', { replacements: [user_id], type: sequelize.QueryTypes.CALL });
+            console.log(tempUser);
+            if (tempResult[0] != undefined) {
+                mail.sendEmail(tempUser[0]['email'], subject, body);
+                res.send({ "status": "advisor informed" });
+            } else
+                res.send({ "status": "this advisor's team is healthy" });
         }
         //Generates report for advisor
     static async generateReport(req, res, next) {
         res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3001');
 
 
-        //let sql=`get_team_with_coordinator(?)`
-
+        //let sql=`get_team_with_coordinato
         //Case coordinator 
         //User ID
         const { user_id } = req.body;
@@ -209,11 +222,13 @@ class teamInfo {
         } catch (error) {
             console.log(error)
         }
+        let tempResult = await sequelize.query('CALL get_alerts(?)', { replacements: [user_id], type: sequelize.QueryTypes.CALL });
+        console.log(tempResult);
         if (report != []) {
             res.send(JSON.stringify(report));
             //sendEmail(user.email);
         } else {
-            res.send(JSON("Your teams are healthy"));
+            res.send("Your teams are healthy");
             //sendEmail(user.email);
         }
 

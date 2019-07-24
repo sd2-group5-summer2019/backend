@@ -1,9 +1,7 @@
 const { sequelize } = require('../models');
 const dice = require('dice-coefficient');
 const levenstein = require('js-levenshtein');
-const mail = require('./mailer');
-const body = "There's an issue with one of your members";
-const subject = "ALERT";
+
 class form {
 
     static async createForm(req, res, next) {

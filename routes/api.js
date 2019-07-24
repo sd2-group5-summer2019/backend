@@ -73,6 +73,7 @@ router.post('/getAllTeams', requireAuth, teamController.getAllTeams);
 router.post('/generateReport', requireAuth, teamController.generateReport);
 router.post('/createTeam', requireAuth, teamController.createTeam);
 router.post('/getTeamID', requireAuth, teamController.getTeamID);
+router.post('/sendEmail', teamController.sendEmail);
 
 // Sponsor stuff
 router.post('/getAllSponsors', requireAuth, sponsorController.getAllSponsors);
@@ -83,7 +84,7 @@ router.post('/assignForm', requireAuth, formController.assignForm);
 router.post('/createForm', requireAuth, formController.createForm);
 router.post('/getForm', requireAuth, formController.getForm);
 router.post('/updateForm', requireAuth, formController.updateForm);
-router.post('/submitForm' /*, requireAuth*/ , formController.submitForm);
+router.post('/submitForm', requireAuth, formController.submitForm);
 router.post('/deleteForm', requireAuth, formController.deleteForm);
 router.post('/getAnswers', requireAuth, formController.getAnswers);
 router.post('/getAllForms', requireAuth, formController.getAllForms)
