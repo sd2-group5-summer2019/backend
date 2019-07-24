@@ -49,7 +49,7 @@ const upload = multer({ storage });
 // Login routes
 router.post('/login', loginController.login);
 router.post('/login_secure', loginController.login_secure);
-router.post('/changePassword', loginController. changePassword);
+router.post('/changePassword', loginController.changePassword);
 router.post('/verifyStudentEmail', loginController.verifyStudentEmail);
 
 // Register routes.
