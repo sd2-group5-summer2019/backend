@@ -808,6 +808,7 @@ async function triggerCheck(user_id, form_id, instance_id, results) {
     let tempResult;
     let type;
     var date = new Date().toISOString().slice(0, 10);
+    let advisorID = await sequelize.query('CALL get_student_advisor(?)', { replacements: [user_id], type: sequelize.QueryTypes.CALL });
 
     try {
         //get type
@@ -822,7 +823,7 @@ async function triggerCheck(user_id, form_id, instance_id, results) {
     }
     try {
         //
-        instance = await sequelize.query('CALL get_form_instance(?,?,?)', { replacements: [form_id, instance_id, user_id], type: sequelize.QueryTypes.SELECT });
+        instance = await sequelize.query('CALL get_form_instance(?,?,?)', { replacements: [form_id, instance_id, user_id], type: sequelize.QueryTypes.CALL });
 
 
 
@@ -844,8 +845,10 @@ async function triggerCheck(user_id, form_id, instance_id, results) {
         }
     }
     if (type === 'quiz') {
-        if (form[0] != undefined)
-            if (form[0].form_threshold != null && instance[0].grade < form[0].form_threshold) {
+        tempForm = await sequelize.query('CALL get_form(?)', { replacements: [form_id], type: sequelize.QueryTypes.CALL });
+        threshold = tempForm[0]['form_threshold'];
+        if (threshold != undefined)
+            if (instance[0].grade < threshold) {
                 //Insert into alerts array
                 let newAlert = await sequelize.query(`CALL insert_alert_history(?,?)`, {
                     replacements: [instance_id, advisorID[0].user_id],
@@ -862,12 +865,6 @@ async function triggerCheck(user_id, form_id, instance_id, results) {
         });
     }
 
-    if (report.length > 0) {
-        let newAlert = await sequelize.query(`CALL insert_alert_history(?,?)`, {
-            replacements: [instance_id, advisorID[0].user_id],
-            type: sequelize.QueryTypes.CALL
-        });
-    }
     //Email report
 
     //mail.sendEmail(advisorID[0]['email'],subject,body);
