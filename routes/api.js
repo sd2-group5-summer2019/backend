@@ -96,7 +96,6 @@ router.post('/csvUpload', requireAuth, upload.single('file'), csvUploadControlle
 // Testing for the frontend JSON.
 router.post('/frontendTest', requireAuth, frontendTestController.frontendTest);
 
-router.post('/registerCSV', registerCSVController.registercsv);
 router.post('/teamregisterCSV', registerCSVController.teamregistercsv);
 
 router.post('/getAnalytics', analyticsController.questionAnalytics);
