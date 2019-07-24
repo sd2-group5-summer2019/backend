@@ -194,7 +194,7 @@ class form {
 
         if(type === 'task') {
             
-            const{ access_level, description, end_date, start_date, title, user_id, milestone_instance_id, form_threshold, assign_to_id } = req.body;
+            const{ access_level, description, end_date, start_date, title, user_id, milestone_instance_id, form_threshold, assign_to_id, team_id } = req.body;
 
             let temp_task_instance_id;
 
@@ -229,8 +229,8 @@ class form {
 
             // Create the instance.
             try{
-                let result = await sequelize.query('CALL insert_form_instance_user(?,?,?,?)',
-                { replacements: [ end_date, form_id, start_date, assign_to_id ],
+                let result = await sequelize.query('CALL insert_form_instance_user_and_team(?,?,?,?)',
+                { replacements: [ end_date, form_id, start_date, team_id, assign_to_id ],
                 type : sequelize.QueryTypes.CALL});
                 console.log(result);
                 temp_task_instance_id = result[0]['LAST_INSERT_ID()'];
@@ -311,64 +311,6 @@ class form {
             
         }
 
-    }
-    //Retrieving Questions From Quizzes and surveys
-    static async getForm(req, res, next) {
-
-        const { form_id } = req.body;
-        
-        let result={
-            "form":{
-                "questions":[
-                    {"answers":[{}]}],
-
-            },
-            
-        };
-        let questions;
-        try {
-             // CALL getForm SP       
-            let form = await sequelize.query(
-                'CALL get_form(?)', 
-                {replacements:[ form_id ], type: sequelize.QueryTypes.CALL})
-            
-                    // Placeholder for now
-                    if(form===undefined||form[0]==null)
-                    {
-                        res.send({status:"form not found"});
-                        next;
-                    }
-                    result.form=form[0];
-                    switch (form[0].type)
-                    {
-                        case 'quiz':
-                            //get questions
-                            questions = await sequelize.query(
-                                'CALL get_form_questions(?)', 
-                                {replacements:[ form_id ], type: sequelize.QueryTypes.CALL})
-                            for (let i=0;i<questions.length;i++)
-                            {
-                                let answers = await sequelize.query(
-                                    'CALL get_answers_to_question(?)',
-                                    {replacements:[questions[i].question_id],type: sequelize.QueryTypes.CALL}
-                                )
-                                questions[i].answers=answers;
-                            }
-                            result.questions=questions;
-                            break;
-                        case 'survey':
-                                    //get questions
-                                    questions = await sequelize.query(
-                                        'CALL get_form_questions(?)', 
-                                        {replacements:[ form_id ], type: sequelize.QueryTypes.CALL})
-                                    result.questions=questions;
-                                    break;    
-                    }
-                
-                
-        } catch (error) {
-            next;
-        }
     }
 
     static async getForm(req, res, next) {
@@ -659,6 +601,7 @@ class form {
 
         res.send(answers);
     }
+
     //Delete An unassigned Form
 
     static async getAllForms(req, res, next){
@@ -726,6 +669,27 @@ class form {
 
         res.send(instanceList);
     }
+
+    // Gets attendance instance based on meeting instance.
+    static async getAttendance(req, res, next){
+
+        // Meeting instance id.
+        const { instance_id } = req.body;
+
+        let result;
+
+        try{
+            result = await sequelize.query('CALL get_completed_meeting(?)',
+            {replacements : [ instance_id ], type : sequelize.QueryTypes.CALL});
+        }catch (error){
+            console.log(error);
+        }
+
+        // return all info for attendance.
+        res.send(result);
+
+    }
+
     // This will be called to assign instances of a form to one of three choices.
     // 1 = everyone in a course (sd1 : 'summer', year : 2019).
     // 2 = groups, group IDs will be sent.
@@ -842,6 +806,7 @@ class form {
         }
     }
 }
+
 //This grades submitted quizzes and updates the instance
     async function quizGrader(user_id,form_id,instance_id,responses)
     {

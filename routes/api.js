@@ -87,6 +87,7 @@ router.post('/getAnswers', requireAuth, formController.getAnswers);
 router.post('/getAllForms', requireAuth, formController.getAllForms)
 router.post('/getInstances', requireAuth, formController.getInstances);
 router.post('/assignForm', requireAuth, formController.assignForm);
+router.post('/getAttendance', formController.getAttendance);
 
 // CSV Upload
 router.post('/csvUpload', requireAuth, upload.single('file'), csvUploadController.uploadCSV);
@@ -94,8 +95,8 @@ router.post('/csvUpload', requireAuth, upload.single('file'), csvUploadControlle
 // Testing for the frontend JSON.
 router.post('/frontendTest', requireAuth, frontendTestController.frontendTest);
 
-router.post('/registerCSV', registerCSVController.registercsv);
-router.post('/teamregisterCSV', registerCSVController.teamregistercsv);
+//router.post('/registerCSV', registerCSVController.registercsv);
+//router.post('/teamregisterCSV', registerCSVController.teamregistercsv);
 
-router.post('/getAnalytics', analyticsController.questionAnalytics);
+//router.post('/getAnalytics', analyticsController.questionAnalytics);
 module.exports = router;
