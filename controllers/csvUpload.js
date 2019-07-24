@@ -5,7 +5,7 @@ const fs = require('fs');
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
 
-async function insertStudents(NID, last_name, first_name, email, sd1_term, sd1_year) {
+async function insertStudents(NID, last_name, first_name, email, sd1_term, sd1_year, res) {
     let new_user_id;
     let type = 'student';
 
@@ -58,7 +58,7 @@ class csvUpload {
                 // Index # -> name
                 // 3 -> NID, 4 -> last name, 5 -> first name, 7 -> email
                 for(let i = 1; i < csvData.length; i++) {
-                    insertStudents(csvData[i][3], csvData[i][4], csvData[i][5], csvData[i][7], sd1_term, sd1_year);
+                    insertStudents(csvData[i][3], csvData[i][4], csvData[i][5], csvData[i][7], sd1_term, sd1_year, res);
                 }
 
                 res.json('Upload Successful');
