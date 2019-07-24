@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const passportService = require('../services/passport');
 const passport = require('passport');
+const multer = require('multer');
 const requireAuth = passport.authenticate('jwt', { session: false });
 
 // Controllers
@@ -13,51 +14,85 @@ const teamController = require('../controllers/team');
 const sponsorController = require('../controllers/sponsor');
 const formController = require('../controllers/form');
 const frontendTestController = require('../controllers/frontendTest');
-const registerCSVController = require('../controllers/registerCSV');
-const analyticsController=require('../controllers/analytics');
+const csvUploadController = require('../controllers/csvUpload');
+
+const csvTypes = [
+    'text/plain',
+    'text/x-csv',
+    'application/vnd.ms-excel',
+    'application/csv',
+    'application/x-csv',
+    'text/csv',
+    'text/comma-separated-values',
+    'text/x-comma-separated-values',
+    'text/tab-separated-values',
+];
+
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        if (csvTypes.indexOf(file.mimetype)) {
+            cb(null, './uploads/')
+        } else {
+            cb(new Error('Given File is not supported.'));
+        }
+    },
+    filename: function (req, file, cb) {
+        let date = new Date().toISOString();
+        date = date.slice(0,10);
+        let fileName = date + "_" + file.originalname;
+        cb(null, fileName);
+    }
+});
+
+const upload = multer({ storage });
+
 // Login routes
 router.post('/login', loginController.login);
 router.post('/login_secure', loginController.login_secure);
+router.post('/changePassword', loginController.changePassword);
+router.post('/verifyStudentEmail', loginController.verifyStudentEmail);
 
 // Register routes.
-router.post('/register', registerController.register);
-router.post('/verifyStudentEmail', registerController.verifyStudentEmail);
-router.post('/verifyCode', registerController.verifyCode);
-router.post('/setNewPassword', registerController.setNewPassword);
+router.post('/register', requireAuth, registerController.register);
+router.post('/verifyCode', requireAuth, registerController.verifyCode);
+router.post('/setNewPassword', requireAuth, registerController.setNewPassword);
 
 // Get a student's information
-router.post('/getAllStudents', studentController.getAllStudents);
-router.post('/insertStudent', studentController.insertStudent);
-router.post('/updateStudent', studentController.updateStudent);
+router.post('/getAllStudents', requireAuth, studentController.getAllStudents);
+router.post('/insertStudent', requireAuth, studentController.insertStudent);
+router.post('/updateStudent', requireAuth, studentController.updateStudent);
 
 // Taking survey routes.
- router.post('/getSurvey', surveyController.getSurvey);
+ router.post('/getSurvey', requireAuth, surveyController.getSurvey);
 // router.post('/submitSurvey', surveyController.submitSurvey);
 
 // Team stuff
-router.post('/getAllTeams', teamController.getAllTeams);
-router.post('/generateReport', teamController.generateReport);
-router.post('/createTeam', teamController.createTeam);
-router.post('/getTeamID', teamController.getTeamID);
+router.post('/getAllTeams', requireAuth, teamController.getAllTeams);
+router.post('/generateReport', requireAuth, teamController.generateReport);
+router.post('/createTeam', requireAuth, teamController.createTeam);
+router.post('/getTeamID', requireAuth, teamController.getTeamID);
 
 // Sponsor stuff
-router.post('/getAllSponsors', sponsorController.getAllSponsors);
-router.post('/assignSponsorToTeam', sponsorController.assignSponsorToTeam);
+router.post('/getAllSponsors', requireAuth, sponsorController.getAllSponsors);
+router.post('/assignSponsorToTeam', requireAuth, sponsorController.assignSponsorToTeam);
 
 // Form
-router.post('/assignForm', formController.assignForm);
-router.post('/createForm', formController.createForm);
-router.post('/getForm', formController.getForm);
-router.post('/updateForm', formController.updateForm);
-router.post('/submitForm', formController.submitForm);
-router.post('/deleteForm', formController.deleteForm);
-router.post('/getAnswers', formController.getAnswers);
-router.post('/getAllForms', formController.getAllForms)
-router.post('/getInstances', formController.getInstances);
-router.post('/assignForm', formController.assignForm);
+router.post('/assignForm', requireAuth, formController.assignForm);
+router.post('/createForm', requireAuth, formController.createForm);
+router.post('/getForm', requireAuth, formController.getForm);
+router.post('/updateForm', requireAuth, formController.updateForm);
+router.post('/submitForm', requireAuth, formController.submitForm);
+router.post('/deleteForm', requireAuth, formController.deleteForm);
+router.post('/getAnswers', requireAuth, formController.getAnswers);
+router.post('/getAllForms', requireAuth, formController.getAllForms)
+router.post('/getInstances', requireAuth, formController.getInstances);
+router.post('/assignForm', requireAuth, formController.assignForm);
+
+// CSV Upload
+router.post('/csvUpload', requireAuth, upload.single('file'), csvUploadController.uploadCSV);
 
 // Testing for the frontend JSON.
-router.post('/frontendTest', frontendTestController.frontendTest);
+router.post('/frontendTest', requireAuth, frontendTestController.frontendTest);
 
 router.post('/registerCSV', registerCSVController.registercsv);
 router.post('/teamregisterCSV', registerCSVController.teamregistercsv);
