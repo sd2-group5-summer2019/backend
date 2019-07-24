@@ -71,6 +71,7 @@ router.post('/getAllTeams', requireAuth, teamController.getAllTeams);
 router.post('/generateReport', requireAuth, teamController.generateReport);
 router.post('/createTeam', requireAuth, teamController.createTeam);
 router.post('/getTeamID', requireAuth, teamController.getTeamID);
+router.post('/getTeamMembers', requireAuth, teamController.getTeamMembers);
 
 // Sponsor stuff
 router.post('/getAllSponsors', requireAuth, sponsorController.getAllSponsors);
@@ -87,7 +88,7 @@ router.post('/getAnswers', requireAuth, formController.getAnswers);
 router.post('/getAllForms', requireAuth, formController.getAllForms)
 router.post('/getInstances', requireAuth, formController.getInstances);
 router.post('/assignForm', requireAuth, formController.assignForm);
-router.post('/getAttendance', formController.getAttendance);
+router.post('/getAttendance', requireAuth, formController.getAttendance);
 
 // CSV Upload
 router.post('/csvUpload', requireAuth, upload.single('file'), csvUploadController.uploadCSV);
