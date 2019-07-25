@@ -943,14 +943,24 @@ async function triggerCheck(form_id, instance_id, results, team_id, user_id) {
     if (type === 'quiz') {
         tempForm = await sequelize.query('CALL get_form(?)', { replacements: [form_id], type: sequelize.QueryTypes.CALL });
         threshold = tempForm[0]['form_threshold'];
+
+        let instanceGrade;
+        try{
+            instanceGrade = await sequelize.query('SELECT forms_instances.grade FROM form_instances WHERE form_instance.instance_id = ?', {replacements : [instance_id], type : sequelize.QueryTypes.CALL});
+        }catch(error){
+            console.log(error);
+        }
+
         if (threshold != undefined)
-            if (instance[0].grade < threshold) {
+        {
+            if ([0].grade < threshold) {
                 //Insert into alerts array
                 let newAlert = await sequelize.query(`CALL insert_alert_history(?,?)`, {
                     replacements: [instance_id, advisorID[0].user_id],
                     type: sequelize.QueryTypes.CALL
                 });
             }
+        }
     }
     if (type === 'milestone')
         instance = await sequelize.query('CALL get_team_instance(?,?,?)', { replacements: [form_id, instance_id], type: sequelize.QueryTypes.CALL });
