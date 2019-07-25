@@ -65,6 +65,9 @@ class form {
         }
 
         if(type === 'quiz') {
+
+            console.log(req);
+
             const { access_level, title, user_id, description, questions } = req.body;
             try {
                 let threshold=req.body.form_threshold;
@@ -75,7 +78,7 @@ class form {
 
                 returnFormID = await sequelize.query(
                     'CALL insert_form(?,?,?,?,?,?)', 
-                    {replacements:[ access_level,description,threshold, title, type, user_id], type: sequelize.QueryTypes.CALL});
+                    {replacements:[ access_level, description, threshold, title, type, user_id], type: sequelize.QueryTypes.CALL});
                 // console.log(returnFormID[0]['LAST_INSERT_ID()']);
                 form_id = returnFormID[0]['LAST_INSERT_ID()'];
                 // console.log(form_id);
@@ -86,6 +89,8 @@ class form {
                 status.status1 = "Failed";
                 res.send(status);
             }
+
+            console.log("new form id is " + form_id);
             
             // Loop through and insert questions.
             for(let i = 0; i < questions.length; i++) {
@@ -103,6 +108,7 @@ class form {
                     category_id_temp = questions[i].category_id;
                 }
 
+
                 if(questions[i].question_threshold === undefined)
                 {
                     question_threshold_temp = null;
@@ -111,16 +117,10 @@ class form {
                     question_threshold_temp = questions[i]
                 }
 
+                
+
                 try {
-                    category_id=questions[i].category_id;
-                    if(questions[i].category_id===undefined)
-                    {
-                        category_id=1;
-                    }
-                    if(questions[i].question_threshold===undefined)
-                    {
-                        questions[i].question_threshold=null;
-                    }
+
                     var returnQuestionID = await sequelize.query(
                         'CALL insert_form_question(?,?,?,?,?)', 
                         {replacements:[ category_id, form_id, questions[i].question_text,questions[i].question_threshold, questions[i].question_type ], type: sequelize.QueryTypes.CALL})
