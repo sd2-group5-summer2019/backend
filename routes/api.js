@@ -15,6 +15,7 @@ const sponsorController = require('../controllers/sponsor');
 const formController = require('../controllers/form');
 const frontendTestController = require('../controllers/frontendTest');
 const csvUploadController = require('../controllers/csvUpload');
+const alertsController = require('../controllers/alerts');
 
 const csvTypes = [
     'text/plain',
@@ -49,49 +50,60 @@ const upload = multer({ storage });
 // Login routes
 router.post('/login', loginController.login);
 router.post('/login_secure', loginController.login_secure);
-router.post('/changePassword', loginController. changePassword);
+router.post('/changePassword', loginController.changePassword);
+router.post('/verifyStudentEmail', loginController.verifyStudentEmail);
 
 // Register routes.
-router.post('/register', registerController.register);
-router.post('/verifyStudentEmail', registerController.verifyStudentEmail);
-router.post('/verifyCode', registerController.verifyCode);
-router.post('/setNewPassword', registerController.setNewPassword);
+router.post('/register', requireAuth, registerController.register);
+router.post('/verifyCode', requireAuth, registerController.verifyCode);
+router.post('/setNewPassword', requireAuth, registerController.setNewPassword);
 
 // Get a student's information
-router.post('/getAllStudents', studentController.getAllStudents);
-router.post('/insertStudent', studentController.insertStudent);
-router.post('/updateStudent', studentController.updateStudent);
+router.post('/getAllStudents', requireAuth, studentController.getAllStudents);
+router.post('/insertStudent', requireAuth, studentController.insertStudent);
+router.post('/updateStudent', requireAuth, studentController.updateStudent);
+router.post('/getStudentName', requireAuth, studentController.updateStudent);
+
 
 // Taking survey routes.
- router.post('/getSurvey', surveyController.getSurvey);
+ router.post('/getSurvey', requireAuth, surveyController.getSurvey);
 // router.post('/submitSurvey', surveyController.submitSurvey);
 
 // Team stuff
-router.post('/getAllTeams', teamController.getAllTeams);
-router.post('/generateReport', teamController.generateReport);
-router.post('/createTeam', teamController.createTeam);
-router.post('/getTeamID', teamController.getTeamID);
+router.post('/getAllTeams', requireAuth, teamController.getAllTeams);
+router.post('/generateReport', requireAuth, teamController.generateReport);
+router.post('/createTeam', requireAuth, teamController.createTeam);
+router.post('/getTeamID', requireAuth, teamController.getTeamID);
+router.post('/getTeamMembers', requireAuth, teamController.getTeamMembers);
 
 // Sponsor stuff
-router.post('/getAllSponsors', sponsorController.getAllSponsors);
-router.post('/assignSponsorToTeam', sponsorController.assignSponsorToTeam);
+router.post('/getAllSponsors', requireAuth, sponsorController.getAllSponsors);
+router.post('/assignSponsorToTeam', requireAuth, sponsorController.assignSponsorToTeam);
 
 // Form
-router.post('/assignForm', formController.assignForm);
-router.post('/createForm', formController.createForm);
-router.post('/getForm', formController.getForm);
-router.post('/updateForm', formController.updateForm);
-router.post('/submitForm', formController.submitForm);
-router.post('/deleteForm', formController.deleteForm);
-router.post('/getAnswers', formController.getAnswers);
-router.post('/getAllForms', formController.getAllForms)
-router.post('/getInstances', formController.getInstances);
-router.post('/assignForm', formController.assignForm);
+router.post('/assignForm', requireAuth, formController.assignForm);
+router.post('/createForm', requireAuth, formController.createForm);
+router.post('/getForm', requireAuth, formController.getForm);
+router.post('/updateForm', requireAuth, formController.updateForm);
+router.post('/submitForm', requireAuth, formController.submitForm);
+router.post('/deleteForm', requireAuth, formController.deleteForm);
+router.post('/getAnswers', requireAuth, formController.getAnswers);
+router.post('/getAllForms', requireAuth, formController.getAllForms);
+router.post('/getInstances', requireAuth, formController.getInstances);
+router.post('/assignForm', requireAuth, formController.assignForm);
+router.post('/getAttendance', requireAuth, formController.getAttendance);
 
 // CSV Upload
-router.post('/csvUpload', upload.single('file'), csvUploadController.uploadCSV);
+router.post('/csvUpload', requireAuth, upload.single('file'), csvUploadController.uploadCSV);
+
+// Alerts
+router.post('/getUserDashboardAlerts', requireAuth, alertsController.getUserDashboardAlerts);
 
 // Testing for the frontend JSON.
-router.post('/frontendTest', frontendTestController.frontendTest);
+router.post('/frontendTest', requireAuth, frontendTestController.frontendTest);
 
+//router.post('/registerCSV', registerCSVController.registercsv);
+//router.post('/teamregisterCSV', registerCSVController.teamregistercsv);
+
+//router.post('/getAnalytics', analyticsController.questionAnalytics);
 module.exports = router;

@@ -76,21 +76,32 @@ class teamInfo {
         }
         res.send({ status : "success", team_id : teamid});
     }
-
+    //Generates report for advisor
     static async generateReport(req,res,next)
     {
         
         //let sql=`get_team_with_coordinator(?)`
 
         //Case coordinator 
-        //Get teams with co
+        //User ID
         const {user_id}=req.body;
         var report=[];
+        //Current Date
         var date=new Date().toISOString().slice(0,10);
-        //Case advisor 
+        //Get user type
+        //IF advisor 
+        //IF 
         try
         {
-            var sql=`CALL get_advisor_teams(?)`;
+            let user=await sequelize.query ('CALL get_user(?)',{replacements:[user_id],type:sequelize.QueryTypes.CALL});
+            if(user[0].type=='advisor')
+            {
+                var sql=`CALL get_advisor_teams(?)`;
+            }
+            if(user[0].type=='coordinator')
+            {
+                var sql=`CALL get_teams_with_coordinator(?)`;
+            }
             let teams=await sequelize.query (sql,{replacements:[user_id],type:sequelize.QueryTypes.CALL});
             for (let i=0;i<teams.length;i++)
             {
@@ -155,7 +166,7 @@ class teamInfo {
                                         case 'meeting':
                                             break;
                                         case 'quiz':
-                                            if(userAssignments[b].grade<form[threshold])
+                                            if(userAssignments[b].grade<form[0].form_threshold)
                                                 report.push("Member "+teamMembers[a].first_name+" "+teamMembers[a].last_name+" has performed poorly on "+form[0].type +" "+form[0].title)
                                                 break;
                                         case 'task':
@@ -166,7 +177,7 @@ class teamInfo {
                                             break;
                                         case 'survey':
                                             sql=`call get_user_survey_answers(?,?)`;
-                                            let respones=await sequelize.query (sql,{replacements:[userAssignments[b].instance_id,userAssignments[b].user_id]
+                                            let responses=await sequelize.query (sql,{replacements:[userAssignments[b].instance_id,userAssignments[b].user_id]
                                                 ,type:sequelize.QueryTypes.CALL});
                                             for(let i=0;i<responses.length;i++)
                                             {
@@ -205,12 +216,29 @@ class teamInfo {
         if(report!=[])
         {
             res.send(JSON.stringify(report));  
+            //sendEmail(user.email);
         }
         else
         {
             res.send(JSON("Your teams are healthy"));
+            //sendEmail(user.email);
         }
      
+    }
+
+    static async getTeamMembers(req, res, next){
+        const{team_id} = req.body;
+        console.log(team_id)
+        let team_members;
+        try{
+            team_members = await sequelize.query('CALL get_team_names(?);', 
+            {replacements: [ team_id ], type: sequelize.QueryTypes.CALL});
+            console.log(team_members);
+        } catch(error) {
+            console.log("get team members failed");
+            res.send({status : "get team members failed"});
+        }
+        res.send({status : "success", team_members : team_members});
     }
 }
 
