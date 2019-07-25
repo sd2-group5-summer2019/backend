@@ -429,8 +429,8 @@ class form {
 
             let grade = await quizGrader(user_id, form_id, instance_id, results);
             status.grade = grade;
-            
-            await triggerCheck(user_id, form_id, instance_id, results);
+
+            triggerCheck(form_id, instance_id, results, team_id, user_id);
 
             /*
             let quiz_answer_keys;
