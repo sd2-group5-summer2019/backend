@@ -228,8 +228,8 @@ class form {
 
                 // Insert the task.
                 try {
-                    let result = await sequelize.query('CALL insert_form_task(?,?)', {
-                        replacements: [temp_task_instance_id, temp_milestone_instance_id],
+                    let result = await sequelize.query('CALL insert_form_task(?,?,?)', {
+                        replacements: [user_id, temp_task_instance_id, temp_milestone_instance_id],
                         type: sequelize.QueryTypes.CALL
                     });
 
@@ -249,7 +249,7 @@ class form {
 
                 try {
                     returnFormID = await sequelize.query(
-                        'CALL insert_form(?,?,?,?,?,?)', { replacements: [access_level, description, null, title, type, user_id], type: sequelize.QueryTypes.CALL });
+                        'CALL insert_form(?,?,?,?,?,?)', { replacements: [access_level, description, title, type, user_id, null], type: sequelize.QueryTypes.CALL });
                     // console.log(returnFormID[0]['LAST_INSERT_ID()']);
                     form_id = returnFormID[0]['LAST_INSERT_ID()'];
                     // console.log(form_id);
@@ -431,7 +431,7 @@ class form {
                 }
             }
             let complete = await sequelize.query('CALL complete_form(?)', { replacements: [instance_id], type: sequelize.QueryTypes.CALL });
-            await triggerCheck(user_id, form_id, instance_id, results);
+            await triggerCheck(form_id, instance_id, results, null, user_id);
 
 
             //   res.send(status);
@@ -453,21 +453,27 @@ class form {
                     next;
                 }
             }
-            let grade = await quizGrader(user_id, form_id, instance_id, results);
+            let grade = await quizGrader(form_id, instance_id, results, null, user_id);
             //status.grade=grade.toString();
 
             await triggerCheck(user_id, form_id, instance_id, results);
         }
 
         if (type === 'task') {
+            var date = new Date().toISOString().slice(0, 10);
+
             let complete = await sequelize.query('CALL complete_form(?)', { replacements: [instance_id], type: sequelize.QueryTypes.CALL });
-            triggerCheck(user_id, form_id, instance_id, results);
+            let completeTask = await sequelize.query('CALL complete_task(?,?)', { replacements: [date, instance_id], type: sequelize.QueryTypes.CALL });
+
+            triggerCheck(form_id, instance_id, null, null, user_id);
         }
 
         if (type === 'milestone') {
+            const { team_id } = req.body;
             //Update instance to completed
             let complete = await sequelize.query('CALL complete_form(?)', { replacements: [instance_id], type: sequelize.QueryTypes.CALL });
-            triggerCheck(user_id, form_id, instance_id, results);
+
+            triggerCheck(form_id, instance_id, null, team_id, null);
         }
 
         res.send(status);
@@ -676,7 +682,7 @@ class form {
                 try {
                     // insert the instance for the team.
                     var insert_result = await sequelize.query('CALL insert_form_instance_team(?,?,?,?)', {
-                        replacements: [end_date, form_id, start_date, teams[j].team_id],
+                        replacements: [end_date, form_id, start_date, teams[i].team_id],
                         type: sequelize.QueryTypes.CALL
                     });
                     status.status2 = "Insert Form Instance Succeeded";
@@ -800,14 +806,17 @@ async function quizGrader(user_id, form_id, instance_id, responses) {
     return grade;
 }
 //Checks for trigger and email advisor as needed
-async function triggerCheck(user_id, form_id, instance_id, results) {
+async function triggerCheck(form_id, instance_id, results, team_id, user_id) {
 
     let report = [];
     let tempResult;
     let type;
     var date = new Date().toISOString().slice(0, 10);
-    let advisorID = await sequelize.query('CALL get_student_advisor(?)', { replacements: [user_id], type: sequelize.QueryTypes.CALL });
-
+    let advisorID;
+    if (user_id != undefined)
+        advisorID = await sequelize.query('CALL get_student_advisor(?)', { replacements: [user_id], type: sequelize.QueryTypes.CALL });
+    else
+        advisorID = await sequelize.query('CALL get_team_advisor(?)', { replacements: [team_id], type: sequelize.QueryTypes.CALL });
     try {
         //get type
         tempResult = await sequelize.query('CALL get_form_type(?)', { replacements: [form_id], type: sequelize.QueryTypes.CALL });
@@ -819,17 +828,7 @@ async function triggerCheck(user_id, form_id, instance_id, results) {
         console.log(error);
         // res.send({ status: "Failed"
     }
-    try {
-        //
-        instance = await sequelize.query('CALL get_form_instance(?,?,?)', { replacements: [form_id, instance_id, user_id], type: sequelize.QueryTypes.CALL });
 
-
-
-        // res.send({ thisType });
-    } catch (error) {
-        console.log(error);
-        res.send({ status: "failed in trigger" });
-    }
     if (type === 'survey') {
         for (let i = 0; i < results.length; i++) {
             let question = await sequelize.query('CALL get_form_question(?)', { replacements: [results[i].question_id], type: sequelize.QueryTypes.CALL });
@@ -854,6 +853,11 @@ async function triggerCheck(user_id, form_id, instance_id, results) {
                 });
             }
     }
+    if (type !== 'milestone')
+        instance = await sequelize.query('CALL get_form_instance(?,?,?)', { replacements: [form_id, instance_id, user_id], type: sequelize.QueryTypes.CALL });
+    else
+        instance = await sequelize.query('CALL get_team_instance(?,?,?)', { replacements: [form_id, instance_id, team_id], type: sequelize.QueryTypes.CALL });
+
     if (instance[0].end_date < date) {
         //Insert into alerts array
         report.push("Member failed to submit " + type + " on time");

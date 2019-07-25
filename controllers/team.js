@@ -1,6 +1,6 @@
 const { sequelize } = require('../models');
 const mail = require('./mailer');
-const body = "There's an issue with one of your members";
+const body = "There's an issue with one of your teams";
 const subject = "ALERT";
 class teamInfo {
 
@@ -81,158 +81,81 @@ class teamInfo {
         res.send({ status: "success", team_id: teamid });
     }
     static async sendEmail(req, res, next) {
-            const { user_id } = req.body;
-            let tempResult = await sequelize.query('CALL get_alerts(?)', { replacements: [user_id], type: sequelize.QueryTypes.CALL });
-            console.log(tempResult);
-            let tempUser = await sequelize.query('CALL get_user(?)', { replacements: [user_id], type: sequelize.QueryTypes.CALL });
-            console.log(tempUser);
-            if (tempResult[0] != undefined) {
-                mail.sendEmail(tempUser[0]['email'], subject, body);
-                res.send({ "status": "advisor informed" });
-            } else
-                res.send({ "status": "this advisor's team is healthy" });
-        }
-        //Generates report for advisor
-    static async generateReport(req, res, next) {
-        res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3001');
-
-
-        //let sql=`get_team_with_coordinato
-        //Case coordinator 
-        //User ID
         const { user_id } = req.body;
-        var report = [];
-        //Current Date
-        var date = new Date().toISOString().slice(0, 10);
-        //Get user type
-        //IF advisor 
-        //IF 
-        try {
-            let user = await sequelize.query('CALL get_user(?)', { replacements: [user_id], type: sequelize.QueryTypes.CALL });
-            if (user[0].type == 'advisor') {
-                var sql = `CALL get_advisor_teams(?)`;
-            }
-            if (user[0].type == 'coordinator') {
-                var sql = `CALL get_teams_with_coordinator(?)`;
-            }
-            let teams = await sequelize.query(sql, { replacements: [user_id], type: sequelize.QueryTypes.CALL });
-            for (let i = 0; i < teams.length; i++) {
-                sql = `CALL get_team_instances(?)`
-                try {
-                    let teamAssignments = await sequelize.query(sql, { replacements: [teams[i].team_id, date], type: sequelize.QueryTypes.CALL });
-                    //Check for triggers
-                    for (let j = 0; j < teamAssignments.length; j++) {
-                        sql = `CALL get_form_from_instance(?)`;
-                        //If trigger not met
-                        try {
-                            let form = await sequelize.query(sql, {
-                                replacements: [teamAssignments[j].instance_id],
-                                type: sequelize.QueryTypes.CALL
-                            });
-                            //Missed milestone
-                            if (date > teamAssignments[j].end_date && teamAssignments[j].is_complete == 0) {
-                                report.push("Team has failed to complete " + form[0].type + " " + form[0].title)
-                            }
-                        } catch (error) {
-                            console.log(error);
-                            next;
-                        }
-                    }
-                    //Check for recently closed assignments
-                    //push message to arry
-                    try {
-                        sql = `CALL get_team_names(?)`
-                        let teamMembers = await sequelize.query(sql, { replacements: [teams[i].team_id], type: sequelize.QueryTypes.CALL })
-                        for (let a = 0; a < teamMembers.length; a++) {
-                            sql = `CALL get_user_instances(?)`
-                            let userAssignments = await sequelize.query(sql, { replacements: [teamMembers[a].user_id], type: sequelize.QueryTypes.CALL })
-                                //Check for triggers
-                            for (let b = 0; b < userAssignments.length; b++) {
+        var message;
+        //Get Alert
+        let tempAlert = await sequelize.query('CALL get_alerts(?)', { replacements: [user_id], type: sequelize.QueryTypes.CALL });
+        //console.log(tempResult);
+        //Get instance attached to alert
+        let tempInstance = await sequelize.query('CALL get_alert_instance(?)', { replacements: [tempAlert[0].instance_id], type: sequelize.QueryTypes.CALL });
+        //console.log(tempAlert);
+        let survey = require('../emails/surveyTriggerEmail');
+        let quiz = require('../emails/quizTriggerEmail');
+        let milestone = require('../emails/milestoneTriggerEmail');
+        let attendance = require('../emails/attendanceTriggerEmail');
+        //Get email to be used
+        let tempUser = await sequelize.query('CALL get_user(?)', { replacements: [tempInstance[0].user_id], type: sequelize.QueryTypes.CALL });
+        console.log(tempUser);
 
-                                sql = `CALL get_form_from_instance(?)`;
-                                //If trigger not met
-                                let form = await sequelize.query(sql, {
-                                    replacements: [userAssignments[b].instance_id],
-                                    type: sequelize.QueryTypes.CALL
-                                });
-                                //Missed task 
-                                if (form != undefined) {
-                                    switch (form[0].type) {
-                                        case 'attendance':
-                                            sql = `call get_meeting_attendance(?,?)`;
+        let alertUser;
 
-                                            let attendance = await sequelize.query(sql, {
-                                                replacements: [userAssignments[b].instance_id, userAssignments[b].user_id],
-                                                type: sequelize.QueryTypes.CALL
-                                            });
-                                            if (attendance != undefined && attendance.did_attend == 0) {
-                                                report.push("Member" + " " + teamMembers[a].first_name + " " + teamMembers[a].last_name + "missed a meeting");
-                                            }
 
-                                            break;
-                                            //Covered In teams
-                                        case 'milestone':
-                                            break;
-                                            //Covered in attendance 
-                                        case 'meeting':
-                                            break;
-                                        case 'quiz':
-                                            if (userAssignments[b].grade < form[0].form_threshold)
-                                                report.push("Member " + teamMembers[a].first_name + " " + teamMembers[a].last_name + " has performed poorly on " + form[0].type + " " + form[0].title)
-                                            break;
-                                        case 'task':
-                                            if (date > userAssignments[b].end_date && userAssignments[b].is_complete == 0) {
-                                                report.push("Member " + teamMembers[a].first_name + " " + teamMembers[a].last_name + " has failed to complete " + form[0].type + " " + form[0].title)
-                                            }
-                                            break;
-                                        case 'survey':
-                                            sql = `call get_user_survey_answers(?,?)`;
-                                            let responses = await sequelize.query(sql, {
-                                                replacements: [userAssignments[b].instance_id, userAssignments[b].user_id],
-                                                type: sequelize.QueryTypes.CALL
-                                            });
-                                            for (let i = 0; i < responses.length; i++) {
-                                                if (responses[i].threshold > responses[i].answer_text) {
-                                                    if (responses[i].user != null) {
-                                                        report.push("Member has responsed poorly to a survey question" +
-                                                            "about user");
-                                                    }
-                                                }
-                                            }
-                                            break;
-                                        default:
-                                            break;
-                                    }
-
-                                }
-
-                            }
-                        }
+        let tempForm = await sequelize.query('CALL get_form_from_instance(?)', { replacements: [tempInstance[0].instance_id], type: sequelize.QueryTypes.CALL });
+        let type = tempForm[0].type;
 
 
 
-                    } catch (error) {
-                        console.log(error);
-                    }
-                } catch (error) {
-                    console.log(error);
+        console.log(tempAlert);
+        if (tempAlert[0] != undefined) {
+            if (type === 'survey') {
+                if (tempInstance[0].user_id != null) {
+                    let message = survey.body;
+                    alertUser = await sequelize.query('CALL get_user(?)', { replacements: [tempAlert[0].user_id], type: sequelize.QueryTypes.CALL });
+
+                    message += " " + alertUser[0].first_name + " " + alertUser[0].last_name;
+                    mail.sendEmail("josephfrantzcito17@gmail.com", survey.subject, message);
+
+
                 }
             }
+            if (type === 'quiz') {
+                if (tempInstance[0].user_id != null) {
+                    let message = quiz.body;
+                    alertUser = await sequelize.query('CALL get_user(?)', { replacements: [tempAlert[0].user_id], type: sequelize.QueryTypes.CALL });
 
-        } catch (error) {
-            console.log(error)
-        }
-        let tempResult = await sequelize.query('CALL get_alerts(?)', { replacements: [user_id], type: sequelize.QueryTypes.CALL });
-        console.log(tempResult);
-        if (report != []) {
-            res.send(JSON.stringify(report));
-            //sendEmail(user.email);
-        } else {
-            res.send("Your teams are healthy");
-            //sendEmail(user.email);
-        }
+                    message += " " + alertUser[0].first_name + " " + alertUser[0].last_name;
+                    mail.sendEmail("josephfrantzcito17@gmail.com", quiz.subject, message);
 
+
+                }
+            }
+            if (type === 'attendance') {
+                if (tempInstance[0].user_id != null) {
+                    let message = quiz.body;
+                    alertUser = await sequelize.query('CALL get_team(?)', { replacements: [tempAlert[0].user_id], type: sequelize.QueryTypes.CALL });
+
+                    message += " " + alertUser[0].team_number;
+                    mail.sendEmail("josephfrantzcito17@gmail.com", attendance.subject, message);
+
+                }
+            }
+            if (type === 'milestone') {
+                if (tempInstance[0].team_id != null) {
+                    let message = quiz.body;
+                    alertUser = await sequelize.query('CALL get_team(?)', { replacements: [tempInstance[0].team_id], type: sequelize.QueryTypes.CALL });
+
+                    message += " " + alertUser[0].team_number;
+                    mail.sendEmail("josephfrantzcito17@gmail.com", milestone.subject, message);
+
+                }
+
+            }
+        } else
+        //Update alert as alerted
+            await sequelize.query('CALL update_alert(?)', { replacements: [tempAlert[0].instance_id, tempAlert[0].user_id], type: sequelize.QueryTypes.CALL });
+        res.send({ "status": "operation successfull" });
     }
-}
 
+
+}
 module.exports = teamInfo;
