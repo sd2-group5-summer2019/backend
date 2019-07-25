@@ -45,7 +45,7 @@ class studentInfo {
     
     // Students will be inactive and not verified.
     // Will return the new student id if inserted.
-    static async insertStudent(res, req, next){
+    static async insertStudent(req, res, next){
         const { degree_id, sd1_term, sd1_year, sd2_term, sd2_year, team_id, user_id } = req.body;
 
         let lastInsertID;
@@ -61,12 +61,12 @@ class studentInfo {
         res.send({status : "insert student success", newStudentID : lastInsertID});
     }
 
-    static async updateStudent(){
+    static async updateStudent(req, res, next){
         
         const { degree_id, sd1_term, sd1_year, sd2_term, sd2_year, team_id, user_id } = req.body;
 
         try{
-            await sequelize.query('CALL update_student(?,?,?,?,?,?)',
+            await sequelize.query('CALL update_student(?,?,?,?,?,?,?)',
             { replacements: [degree_id, sd1_term, sd1_year, sd2_term, sd2_year, team_id, user_id],
             types: sequelize.QueryTypes.CALL});
         }catch(error){

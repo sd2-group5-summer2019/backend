@@ -62,7 +62,7 @@ router.post('/setNewPassword', requireAuth, registerController.setNewPassword);
 router.post('/getAllStudents', requireAuth, studentController.getAllStudents);
 router.post('/insertStudent', requireAuth, studentController.insertStudent);
 router.post('/updateStudent', requireAuth, studentController.updateStudent);
-router.post('/getStudentName', requireAuth, studentController.updateStudent);
+router.post('/getStudentName', requireAuth, studentController.getStudentName);
 
 
 // Taking survey routes.
