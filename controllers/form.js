@@ -440,7 +440,7 @@ class form {
                 res.send({status : "get team id failed"});
             }
 
-            triggerCheck(form_id, instance_id, results, team_id, user_id);
+            //triggerCheck(form_id, instance_id, results, team_id, user_id);
 
             /*
             let quiz_answer_keys;
@@ -572,8 +572,8 @@ class form {
             try {
                 // CALL get_user_form_answers(?)
                 answers = await sequelize.query(
-                    'SELECT DISTINCT QUE.question_text, ANS.answer_text FROM form_answers ANS INNER JOIN form_questions QUE ON ANS.question_id = QUE.question_id WHERE ANS.user_id = ?', 
-                    {replacements:[ userid ], type: sequelize.QueryTypes.SELECT});
+                    'CALL get_form_results(?,?)', 
+                    {replacements:[ userid, form_id ], type: sequelize.QueryTypes.CALL});
                 status.status2 = "Success"    
                 next;
             } catch (error) {
@@ -589,8 +589,8 @@ class form {
             try {
                 // CALL get_user_form_answers(?)
                 answers = await sequelize.query(
-                    'SELECT DISTINCT QUE.question_text, ANS.answer_text FROM form_answers ANS INNER JOIN form_questions QUE ON ANS.question_id = QUE.question_id WHERE ANS.user_id = ?', 
-                    {replacements:[ userid ], type: sequelize.QueryTypes.SELECT});
+                    'CALL get_form_results(?,?)', 
+                    {replacements:[ userid, form_id ], type: sequelize.QueryTypes.CALL});
                 status.status2 = "Success"    
                 next;
             } catch (error) {
@@ -946,14 +946,14 @@ async function triggerCheck(form_id, instance_id, results, team_id, user_id) {
 
         let instanceGrade;
         try{
-            instanceGrade = await sequelize.query('SELECT forms_instances.grade FROM form_instances WHERE form_instance.instance_id = ?', {replacements : [instance_id], type : sequelize.QueryTypes.CALL});
+            instanceGrade = await sequelize.query('SELECT form_instances.grade FROM form_instances WHERE form_instances.instance_id = ?', {replacements : [instance_id], type : sequelize.QueryTypes.CALL});
         }catch(error){
             console.log(error);
         }
 
         if (threshold != undefined)
         {
-            if ([0].grade < threshold) {
+            if (instanceGrade[0].grade < threshold) {
                 //Insert into alerts array
                 let newAlert = await sequelize.query(`CALL insert_alert_history(?,?)`, {
                     replacements: [instance_id, advisorID[0].user_id],

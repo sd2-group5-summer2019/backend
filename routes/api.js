@@ -91,7 +91,7 @@ router.post('/getAnswers', requireAuth, formController.getAnswers);
 router.post('/getAllForms', requireAuth, formController.getAllForms);
 router.post('/getInstances', requireAuth, formController.getInstances);
 router.post('/assignForm', requireAuth, formController.assignForm);
-router.post('/getAttendance', requireAuth, formController.getAttendance);
+router.post('/getAttendance', formController.getAttendance);
 
 // CSV Upload
 router.post('/studentUpload', requireAuth, upload.single('file'), csvUploadController.uploadStudentCSV);
