@@ -81,7 +81,7 @@ router.post('/getAllSponsors', requireAuth, sponsorController.getAllSponsors);
 router.post('/assignSponsorToTeam', requireAuth, sponsorController.assignSponsorToTeam);
 
 // Form
-router.post('/assignForm', requireAuth, formController.assignForm);
+router.post('/assignForm' /*, requireAuth*/ , formController.assignForm);
 router.post('/createForm' /*, requireAuth*/ , formController.createForm);
 router.post('/getForm', requireAuth, formController.getForm);
 router.post('/updateForm', requireAuth, formController.updateForm);

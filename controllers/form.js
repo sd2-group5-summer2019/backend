@@ -130,7 +130,7 @@ class form {
                 } catch (error) {
                     console.log(error);
                     status.status2 = "Failed";
-                    res.send(status);
+                    //res.send(status);
                 }
             }
             res.send({ 'status': status, 'form_id': form_id });
@@ -426,7 +426,7 @@ class form {
                     next;
                 }
             }
-            let grade = await quizGrader(form_id, instance_id, results, null, user_id);
+            let grade = await quizGrader(form_id, instance_id, results, user_id);
             //status.grade=grade.toString();
 
             await triggerCheck(form_id, instance_id, results, null, user_id);
@@ -733,7 +733,7 @@ class form {
 }
 
 //This grades submitted quizzes and updates the instance
-async function quizGrader(user_id, form_id, instance_id, responses) {
+async function quizGrader(form_id, instance_id, responses, user_id, ) {
     // grabs the answers keys to a form id.
     try {
         var keys = await sequelize.query(
@@ -806,7 +806,7 @@ async function quizGrader(user_id, form_id, instance_id, responses) {
 }
 //Checks for trigger and email advisor as needed
 async function triggerCheck(form_id, instance_id, results, team_id, user_id) {
-    let tempResult, type, coordinator, coordinatorID;
+    let tempResult, type, coordinator, coordinatorID, instance;
     var date = new Date().toISOString().slice(0, 10);
     if (user_id != null) {
         coordinator = await sequelize.query('CALL get_my_coordinator_id(?)', { replacements: [user_id], type: sequelize.QueryTypes.CALL });
@@ -822,7 +822,15 @@ async function triggerCheck(form_id, instance_id, results, team_id, user_id) {
     } catch (error) {
         console.log(error);
     }
-
+    //Milestone requires a team id to get the instance
+    if (type === 'milestone')
+        instance = await sequelize.query('CALL get_team_instance(?,?,?)', { replacements: [form_id, instance_id], type: sequelize.QueryTypes.CALL });
+    //Task requires the user_id to be from the forms table
+    else if (type === 'task') {
+        instance = await sequelize.query('CALL get_instance(?,?)', { replacements: [form_id, instance_id], type: sequelize.QueryTypes.CALL });
+    } else
+        instance = await sequelize.query('CALL get_form_instance(?,?,?)', { replacements: [form_id, instance_id, user_id], type: sequelize.QueryTypes.CALL });
+    //Assignment was late, so insert into alert history
     if (type === 'survey') {
         let alert = false;
         for (let i = 0; i < results.length; i++) {
@@ -871,4 +879,4 @@ async function triggerCheck(form_id, instance_id, results, team_id, user_id) {
     }
 }
 
-module.exports = form;
+module.exports = form
