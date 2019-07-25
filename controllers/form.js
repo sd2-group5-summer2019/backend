@@ -419,7 +419,7 @@ class form {
             for (let i = 0; i < results.length; i++) {
                 try {
                     // Submit the survey instance.
-                    let callSurvey = await sequelize.query(`CALL submit_survey(?,?,?,?)`, { replacements: [form_id, results[i].question_id, results[i].answer_text, user_id], type: sequelize.QueryTypes.CALL });
+                    let callSurvey = await sequelize.query(`CALL submit_survey(?,?,?,?)`, { replacements: [results[i].text, instance_id, results[i].question_id, user_id], type: sequelize.QueryTypes.CALL });
                     // res.send({ status: "Success" });
                     console.log(`Insert ${results[i].question_id} and ${results[i].text}`);
                     status.status2 = "Success"
@@ -831,6 +831,7 @@ async function triggerCheck(form_id, instance_id, results, team_id, user_id) {
 
     if (type === 'survey') {
         for (let i = 0; i < results.length; i++) {
+            //Get question threshold
             let question = await sequelize.query('CALL get_form_question(?)', { replacements: [results[i].question_id], type: sequelize.QueryTypes.CALL });
             if (question[0].question_threshold != null && question[0].question_threshold > results[i].text) {
                 //Insert into alerts array
@@ -853,14 +854,15 @@ async function triggerCheck(form_id, instance_id, results, team_id, user_id) {
                 });
             }
     }
-    if (type !== 'milestone')
+    if (type === 'milestone')
+        instance = await sequelize.query('CALL get_team_instance(?,?,?)', { replacements: [form_id, instance_id], type: sequelize.QueryTypes.CALL });
+    else if (type === 'task') {
+        instance = await sequelize.query('CALL get_instance(?,?)', { replacements: [form_id, instance_id], type: sequelize.QueryTypes.CALL });
+    } else
         instance = await sequelize.query('CALL get_form_instance(?,?,?)', { replacements: [form_id, instance_id, user_id], type: sequelize.QueryTypes.CALL });
-    else
-        instance = await sequelize.query('CALL get_team_instance(?,?,?)', { replacements: [form_id, instance_id, team_id], type: sequelize.QueryTypes.CALL });
 
     if (instance[0].end_date < date) {
-        //Insert into alerts array
-        report.push("Member failed to submit " + type + " on time");
+        //Insert into alerts array for both 
         let newAlert = await sequelize.query(`CALL insert_alert_history(?,?)`, {
             replacements: [instance_id, advisorID[0].user_id],
             type: sequelize.QueryTypes.CALL

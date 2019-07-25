@@ -70,90 +70,127 @@ class teamInfo {
     }
 
     static async getTeamID(req, res, next) {
-        const { user_id } = req.body;
-        let teamid;
-        try {
-            teamid = await sequelize.query('CALL get_team_id(?)', { replacements: [user_id], type: sequelize.QueryTypes.CALL });
-        } catch (error) {
-            console.log("get team id failed");
-            res.send({ status: "get team id failed" });
+            const { user_id } = req.body;
+            let teamid;
+            try {
+                teamid = await sequelize.query('CALL get_team_id(?)', { replacements: [user_id], type: sequelize.QueryTypes.CALL });
+            } catch (error) {
+                console.log("get team id failed");
+                res.send({ status: "get team id failed" });
+            }
+            res.send({ status: "success", team_id: teamid });
         }
-        res.send({ status: "success", team_id: teamid });
-    }
+        //Send emails to all advisors with alerts
     static async sendEmail(req, res, next) {
-        const { user_id } = req.body;
-        var message;
-        //Get Alert
-        let tempAlert = await sequelize.query('CALL get_alerts(?)', { replacements: [user_id], type: sequelize.QueryTypes.CALL });
-        //console.log(tempResult);
-        //Get instance attached to alert
-        let tempInstance = await sequelize.query('CALL get_alert_instance(?)', { replacements: [tempAlert[0].instance_id], type: sequelize.QueryTypes.CALL });
-        //console.log(tempAlert);
         let survey = require('../emails/surveyTriggerEmail');
         let quiz = require('../emails/quizTriggerEmail');
         let milestone = require('../emails/milestoneTriggerEmail');
         let attendance = require('../emails/attendanceTriggerEmail');
-        //Get email to be used
-        let tempUser = await sequelize.query('CALL get_user(?)', { replacements: [tempInstance[0].user_id], type: sequelize.QueryTypes.CALL });
-        console.log(tempUser);
+        let task = require('../emails/taskTriggerEmail')
+        var messages = "";
 
-        let alertUser;
+        //Get all unsubmitted assignments past due
+        //Create Alerts 
+        //Send email
+        //Get Alert Not Yet Reported
+        let unalertedAlerts = await sequelize.query('CALL get_unalerted_alerts', { type: sequelize.QueryTypes.CALL });
+        //Get all distinct users to be alerted
+        let userSet = new Set(unalertedAlerts.map(x => x.user_id));
+        let userArray = Array.from(userSet);
+        for (let u = 0; u < userArray.length; u++) {
+            //Get all alerts attached to that user
+            //Store all emails in one array to reduce sent emails
+
+            let tempAlerts = await sequelize.query('CALL get_alerts(?)', { replacements: [userArray[u]], type: sequelize.QueryTypes.CALL });
+            for (let a = 0; a < tempAlerts.length; a++) {
+                //Get instance attached to alert
+                let tempInstance = await sequelize.query('CALL get_alert_instance(?)', { replacements: [tempAlerts[a].instance_id], type: sequelize.QueryTypes.CALL });
+                //console.log(tempAlert);
+                //Get email to be used
+                let tempUser = await sequelize.query('CALL get_user(?)', { replacements: [userArray[u]], type: sequelize.QueryTypes.CALL });
+                console.log(tempUser);
+                //Get user and team that caused trigger
+                let alertUser;
+                let alertTeam;
+                let tempForm = await sequelize.query('CALL get_form_from_instance(?)', { replacements: [tempInstance[0].instance_id], type: sequelize.QueryTypes.CALL });
+                let type = tempForm[0].type;
+
+                if (type === 'survey') {
+                    if (tempInstance[0].user_id != null) {
+                        let message = "";
+                        alertTeam = await sequelize.query('CALL get_user_team(?)', { replacements: [tempInstance[0].user_id], type: sequelize.QueryTypes.CALL });
+                        alertUser = await sequelize.query('CALL get_user(?)', { replacements: [tempInstance[0].user_id], type: sequelize.QueryTypes.CALL });
+
+                        message = alertUser[0].first_name + " " + alertUser[0].last_name +
+                            "of team " + alertTeam[0].team_number + " " + survey.body + "\n";
+                        messages += (message);
+
+                    }
+                }
+                if (type === 'quiz') {
+                    if (tempInstance[0].user_id != null) {
+
+                        let message = "";
+                        alertTeam = await sequelize.query('CALL get_user_team(?)', { replacements: [tempInstance[0].user_id], type: sequelize.QueryTypes.CALL });
+                        alertUser = await sequelize.query('CALL get_user(?)', { replacements: [tempInstance[0].user_id], type: sequelize.QueryTypes.CALL });
+
+                        message = alertUser[0].first_name + " " + alertUser[0].last_name +
+                            " of team " + alertTeam[0].team_number + " " + quiz.body + "\n";
+                        messages += (message);;
 
 
-        let tempForm = await sequelize.query('CALL get_form_from_instance(?)', { replacements: [tempInstance[0].instance_id], type: sequelize.QueryTypes.CALL });
-        let type = tempForm[0].type;
+                    }
+                }
+                //Task
+                if (type === 'task') {
+                    //Get userid from forms table
+                    let userID = tempForm[0].user_id;
+                    let message = "";
+                    alertTeam = await sequelize.query('CALL get_user_team(?)', { replacements: [userID], type: sequelize.QueryTypes.CALL });
+                    alertUser = await sequelize.query('CALL get_user(?)', {
+                        replacements: [userID],
+                        type: sequelize.QueryTypes.CALL
+                    });
 
+                    message = alertUser[0].first_name + " " + alertUser[0].last_name +
+                        " of team " + alertTeam[0].team_number + " " + task.body + "\n";
+                    messages += (message);;
 
-
-        console.log(tempAlert);
-        if (tempAlert[0] != undefined) {
-            if (type === 'survey') {
-                if (tempInstance[0].user_id != null) {
-                    let message = survey.body;
-                    alertUser = await sequelize.query('CALL get_user(?)', { replacements: [tempAlert[0].user_id], type: sequelize.QueryTypes.CALL });
-
-                    message += " " + alertUser[0].first_name + " " + alertUser[0].last_name;
-                    mail.sendEmail("josephfrantzcito17@gmail.com", survey.subject, message);
 
 
                 }
-            }
-            if (type === 'quiz') {
-                if (tempInstance[0].user_id != null) {
-                    let message = quiz.body;
-                    alertUser = await sequelize.query('CALL get_user(?)', { replacements: [tempAlert[0].user_id], type: sequelize.QueryTypes.CALL });
+                if (type === 'attendance') {
+                    let message = "";
+                    alertTeam = await sequelize.query('CALL get_user_team(?)', { replacements: [tempInstance[0].user_id], type: sequelize.QueryTypes.CALL });
+                    alertUser = await sequelize.query('CALL get_user(?)', { replacements: [alertUser[0].user_id], type: sequelize.QueryTypes.CALL });
 
-                    message += " " + alertUser[0].first_name + " " + alertUser[0].last_name;
-                    mail.sendEmail("josephfrantzcito17@gmail.com", quiz.subject, message);
-
-
-                }
-            }
-            if (type === 'attendance') {
-                if (tempInstance[0].user_id != null) {
-                    let message = quiz.body;
-                    alertUser = await sequelize.query('CALL get_team(?)', { replacements: [tempAlert[0].user_id], type: sequelize.QueryTypes.CALL });
-
-                    message += " " + alertUser[0].team_number;
-                    mail.sendEmail("josephfrantzcito17@gmail.com", attendance.subject, message);
+                    message = alertUser[0].first_name + " " + alertUser[0].last_name +
+                        "of team " + alertTeam[0].team_number + " " + attendance.body + "\n";
+                    messages.append(message);
 
                 }
-            }
-            if (type === 'milestone') {
-                if (tempInstance[0].team_id != null) {
-                    let message = quiz.body;
-                    alertUser = await sequelize.query('CALL get_team(?)', { replacements: [tempInstance[0].team_id], type: sequelize.QueryTypes.CALL });
+                if (type === 'milestone') {
+                    if (tempInstance[0].team_id != null) {
+                        let message = "";
+                        alertUser = await sequelize.query('CALL get_team(?)', { replacements: [tempInstance[0].team_id], type: sequelize.QueryTypes.CALL });
 
-                    message += " " + alertUser[0].team_number;
-                    mail.sendEmail("josephfrantzcito17@gmail.com", milestone.subject, message);
+                        message += "Team Number" + " " + alertUser[0].team_number + " " + milestone.body;
+                        messages += (message);
+                    }
 
                 }
 
+                //Update alert as alerted
+                await sequelize.query('CALL update_alert(?)', { replacements: [tempAlerts[a].alert_id], type: sequelize.QueryTypes.CALL });
+
+
             }
-        } else
-        //Update alert as alerted
-            await sequelize.query('CALL update_alert(?)', { replacements: [tempAlert[0].instance_id, tempAlert[0].user_id], type: sequelize.QueryTypes.CALL });
-        res.send({ "status": "operation successfull" });
+
+            //Email User
+            mail.sendEmail("josephfrantzcito17@gmail.com", survey.subject, messages);
+
+        }
+        res.send(200);
     }
 
 

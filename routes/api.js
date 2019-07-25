@@ -81,15 +81,15 @@ router.post('/assignSponsorToTeam', requireAuth, sponsorController.assignSponsor
 
 // Form
 router.post('/assignForm', requireAuth, formController.assignForm);
-router.post('/createForm', requireAuth, formController.createForm);
+router.post('/createForm' /*, requireAuth*/ , formController.createForm);
 router.post('/getForm', requireAuth, formController.getForm);
 router.post('/updateForm', requireAuth, formController.updateForm);
-router.post('/submitForm', requireAuth, formController.submitForm);
+router.post('/submitForm' /*, requireAuth*/ , formController.submitForm);
 router.post('/deleteForm', requireAuth, formController.deleteForm);
 router.post('/getAnswers', requireAuth, formController.getAnswers);
 router.post('/getAllForms', requireAuth, formController.getAllForms)
 router.post('/getInstances', requireAuth, formController.getInstances);
-router.post('/assignForm', requireAuth, formController.assignForm);
+router.post('/assignForm' /*, requireAuth*/ , formController.assignForm);
 
 // CSV Upload
 router.post('/csvUpload', requireAuth, upload.single('file'), csvUploadController.uploadCSV);
