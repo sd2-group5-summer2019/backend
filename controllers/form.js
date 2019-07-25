@@ -812,7 +812,7 @@ async function triggerCheck(form_id, instance_id, results, team_id, user_id) {
         coordinator = await sequelize.query('CALL get_my_coordinator_id(?)', { replacements: [user_id], type: sequelize.QueryTypes.CALL });
         coordinatorID = coordinator[0].user_id;
     } else {
-        coordinator = await sequelize.query('CALL get_team_coordinator_id(?)', { replacements: [user_id], type: sequelize.QueryTypes.CALL });
+        coordinator = await sequelize.query('CALL get_team_coordinator_id(?)', { replacements: [team_id], type: sequelize.QueryTypes.CALL });
         coordinatorID = coordinator[0].user_id;
     }
     try {
@@ -824,7 +824,7 @@ async function triggerCheck(form_id, instance_id, results, team_id, user_id) {
     }
     //Milestone requires a team id to get the instance
     if (type === 'milestone')
-        instance = await sequelize.query('CALL get_team_instance(?,?,?)', { replacements: [form_id, instance_id], type: sequelize.QueryTypes.CALL });
+        instance = await sequelize.query('CALL get_team_instance(?,?,?)', { replacements: [form_id, instance_id, team_id], type: sequelize.QueryTypes.CALL });
     //Task requires the user_id to be from the forms table
     else if (type === 'task') {
         instance = await sequelize.query('CALL get_instance(?,?)', { replacements: [form_id, instance_id], type: sequelize.QueryTypes.CALL });
@@ -861,14 +861,7 @@ async function triggerCheck(form_id, instance_id, results, team_id, user_id) {
                 });
             }
     }
-    //Milestone requires a team id to get the instance
-    if (type === 'milestone')
-        instance = await sequelize.query('CALL get_team_instance(?,?,?)', { replacements: [form_id, instance_id], type: sequelize.QueryTypes.CALL });
-    //Task requires the user_id to be from the forms table
-    else if (type === 'task') {
-        instance = await sequelize.query('CALL get_instance(?,?)', { replacements: [form_id, instance_id], type: sequelize.QueryTypes.CALL });
-    } else
-        instance = await sequelize.query('CALL get_form_instance(?,?,?)', { replacements: [form_id, instance_id, user_id], type: sequelize.QueryTypes.CALL });
+
     //Assignment was late, so insert into alert history
     if (instance[0].end_date < date) {
         //Insert into alerts array for both 
@@ -879,4 +872,4 @@ async function triggerCheck(form_id, instance_id, results, team_id, user_id) {
     }
 }
 
-module.exports = form
+module.exports = form;
