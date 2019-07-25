@@ -165,7 +165,7 @@ class form {
                 // Insert the form and return is the new ID.
                 returnFormID = await sequelize.query(
                     'CALL insert_form(?,?,?,?,?,?)', 
-                    {replacements:[ access_level, description, title, type, user_id, form_threshold ], type: sequelize.QueryTypes.CALL});
+                    {replacements:[ access_level, description,  null, title, type, user_id ], type: sequelize.QueryTypes.CALL});
                     
                 form_id = returnFormID[0]['LAST_INSERT_ID()'];
                 // console.log(form_id);
@@ -206,16 +206,10 @@ class form {
 
             // Insert the form.
             try {
-                
-                let thresholdTemp = null;
-                if(form_threshold != undefined)
-                {
-                    thresholdTemp = form_threshold;
-                }
 
                 returnFormID = await sequelize.query(
                     'CALL insert_form(?,?,?,?,?,?)', 
-                    {replacements:[ access_level, description, title, type, user_id, thresholdTemp ], 
+                    {replacements:[ access_level, description, null, title, type, user_id ], 
                     type: sequelize.QueryTypes.CALL});
                 // console.log(returnFormID[0]['LAST_INSERT_ID()']);
                 form_id = returnFormID[0]['LAST_INSERT_ID()'];
@@ -229,7 +223,7 @@ class form {
 
             // Create the instance.
             try{
-                let result = await sequelize.query('CALL insert_form_instance_user_and_team(?,?,?,?)',
+                let result = await sequelize.query('CALL insert_form_instance_user_and_team(?,?,?,?,?)',
                 { replacements: [ end_date, form_id, start_date, team_id, assign_to_id ],
                 type : sequelize.QueryTypes.CALL});
                 console.log(result);
@@ -263,7 +257,7 @@ class form {
             try {
                 returnFormID = await sequelize.query(
                     'CALL insert_form(?,?,?,?,?,?)', 
-                    {replacements:[ access_level, description, title, type, user_id, null ], 
+                    {replacements:[ access_level, description, null, title, type, user_id ], 
                     type: sequelize.QueryTypes.CALL});
                 // console.log(returnFormID[0]['LAST_INSERT_ID()']);
                 form_id = returnFormID[0]['LAST_INSERT_ID()'];
