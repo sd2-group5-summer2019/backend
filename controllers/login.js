@@ -78,6 +78,8 @@ class login {
         res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
         const { username, password } = req.body;
 
+        console.log(username, password);
+
         const token = tokenForUser(username);
     
         await sequelize.query(`SELECT * FROM users WHERE username = ?`, {replacements:[username], type: sequelize.QueryTypes.SELECT})
