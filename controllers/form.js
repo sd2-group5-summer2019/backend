@@ -65,6 +65,9 @@ class form {
         }
 
         if(type === 'quiz') {
+
+            console.log(req);
+
             const { access_level, title, user_id, description, questions } = req.body;
             try {
                 let threshold=req.body.form_threshold;
@@ -75,7 +78,7 @@ class form {
 
                 returnFormID = await sequelize.query(
                     'CALL insert_form(?,?,?,?,?,?)', 
-                    {replacements:[ access_level,description,threshold, title, type, user_id], type: sequelize.QueryTypes.CALL});
+                    {replacements:[ access_level, description, threshold, title, type, user_id], type: sequelize.QueryTypes.CALL});
                 // console.log(returnFormID[0]['LAST_INSERT_ID()']);
                 form_id = returnFormID[0]['LAST_INSERT_ID()'];
                 // console.log(form_id);
@@ -86,6 +89,8 @@ class form {
                 status.status1 = "Failed";
                 res.send(status);
             }
+
+            console.log("new form id is " + form_id);
             
             // Loop through and insert questions.
             for(let i = 0; i < questions.length; i++) {
@@ -103,6 +108,7 @@ class form {
                     category_id_temp = questions[i].category_id;
                 }
 
+
                 if(questions[i].question_threshold === undefined)
                 {
                     question_threshold_temp = null;
@@ -111,16 +117,10 @@ class form {
                     question_threshold_temp = questions[i]
                 }
 
+                
+
                 try {
-                    category_id=questions[i].category_id;
-                    if(questions[i].category_id===undefined)
-                    {
-                        category_id=1;
-                    }
-                    if(questions[i].question_threshold===undefined)
-                    {
-                        questions[i].question_threshold=null;
-                    }
+
                     var returnQuestionID = await sequelize.query(
                         'CALL insert_form_question(?,?,?,?,?)', 
                         {replacements:[ category_id, form_id, questions[i].question_text,questions[i].question_threshold, questions[i].question_type ], type: sequelize.QueryTypes.CALL})
@@ -165,7 +165,7 @@ class form {
                 // Insert the form and return is the new ID.
                 returnFormID = await sequelize.query(
                     'CALL insert_form(?,?,?,?,?,?)', 
-                    {replacements:[ access_level, description, title, type, user_id, form_threshold ], type: sequelize.QueryTypes.CALL});
+                    {replacements:[ access_level, description,  null, title, type, user_id ], type: sequelize.QueryTypes.CALL});
                     
                 form_id = returnFormID[0]['LAST_INSERT_ID()'];
                 // console.log(form_id);
@@ -206,16 +206,10 @@ class form {
 
             // Insert the form.
             try {
-                
-                let thresholdTemp = null;
-                if(form_threshold != undefined)
-                {
-                    thresholdTemp = form_threshold;
-                }
 
                 returnFormID = await sequelize.query(
                     'CALL insert_form(?,?,?,?,?,?)', 
-                    {replacements:[ access_level, description, title, type, user_id, thresholdTemp ], 
+                    {replacements:[ access_level, description, null, title, type, user_id ], 
                     type: sequelize.QueryTypes.CALL});
                 // console.log(returnFormID[0]['LAST_INSERT_ID()']);
                 form_id = returnFormID[0]['LAST_INSERT_ID()'];
@@ -229,7 +223,7 @@ class form {
 
             // Create the instance.
             try{
-                let result = await sequelize.query('CALL insert_form_instance_user_and_team(?,?,?,?)',
+                let result = await sequelize.query('CALL insert_form_instance_user_and_team(?,?,?,?,?)',
                 { replacements: [ end_date, form_id, start_date, team_id, assign_to_id ],
                 type : sequelize.QueryTypes.CALL});
                 console.log(result);
@@ -263,7 +257,7 @@ class form {
             try {
                 returnFormID = await sequelize.query(
                     'CALL insert_form(?,?,?,?,?,?)', 
-                    {replacements:[ access_level, description, title, type, user_id, null ], 
+                    {replacements:[ access_level, description, null, title, type, user_id ], 
                     type: sequelize.QueryTypes.CALL});
                 // console.log(returnFormID[0]['LAST_INSERT_ID()']);
                 form_id = returnFormID[0]['LAST_INSERT_ID()'];
@@ -900,66 +894,71 @@ class form {
         return grade;
     }
 //Checks for trigger and email advisor as needed
-async function triggerCheck(user_id,form_id,instance_id,results)
-{
+async function triggerCheck(form_id, instance_id, results, team_id, user_id) {
 
-    let report=[];
+    let report = [];
     let tempResult;
     let type;
-    var date=new Date().toISOString().slice(0,10);
-
+    var date = new Date().toISOString().slice(0, 10);
+    let advisorID;
+    if (user_id != undefined)
+        advisorID = await sequelize.query('CALL get_student_advisor(?)', { replacements: [user_id], type: sequelize.QueryTypes.CALL });
+    else
+        advisorID = await sequelize.query('CALL get_team_advisor(?)', { replacements: [team_id], type: sequelize.QueryTypes.CALL });
     try {
         //get type
-        tempResult = await sequelize.query('CALL get_form_type(?)', {replacements:[ form_id ], type: sequelize.QueryTypes.CALL});
-        type = result[0]['type'];
-       
-    
-        // res.send({ thisType });
-    } catch(error) {
-        console.log(error);
-        res.send({ status : "failed in trigger"});
-    } 
-     
-    try {
-        //
-        tempResult = await sequelize.query('select * from form_instances where instance_id=?', 
-        {replacements:[ instance_id ], type: sequelize.QueryTypes.SELECT});
-        
-        
-        // res.send({ thisType });
-    } catch(error) {
-        console.log(error);
-        res.send({ status : "failed in trigger"});
-    }
-    
-    if(type==='survey')
-    {
-        // loop through instance
-        for (let i=0;i<results.length;i++)
-        {
-            let question = await sequelize.query('CALL get_form_question(?)', 
-            {replacements:[ results[i].question_id ], type: sequelize.QueryTypes.CALL});
+        tempResult = await sequelize.query('CALL get_form_type(?)', { replacements: [form_id], type: sequelize.QueryTypes.CALL });
+        type = tempResult[0]['type'];
 
-            if(question[0] !== undefined && question[0].question_threshold>results[i].text)
-            {
-              report.push("Member reported poorly on question");  
+
+        // res.send({ thisType });
+    } catch (error) {
+        console.log(error);
+        // res.send({ status: "Failed"
+    }
+
+    if (type === 'survey') {
+        for (let i = 0; i < results.length; i++) {
+            //Get question threshold
+            let question = await sequelize.query('CALL get_form_question(?)', { replacements: [results[i].question_id], type: sequelize.QueryTypes.CALL });
+            if (question[0].question_threshold != null && question[0].question_threshold > results[i].text) {
+                //Insert into alerts array
+                let newAlert = await sequelize.query(`CALL insert_alert_history(?,?)`, {
+                    replacements: [instance_id, advisorID[0].user_id],
+                    type: sequelize.QueryTypes.CALL
+                });
             }
         }
     }
-    if(type==='quiz')
-    {
-        if(result[0].grade<form[0].form_threshold)
-        {
-            report.push("Member Has Performed poorly on a quiz");
-        }
+    if (type === 'quiz') {
+        tempForm = await sequelize.query('CALL get_form(?)', { replacements: [form_id], type: sequelize.QueryTypes.CALL });
+        threshold = tempForm[0]['form_threshold'];
+        if (threshold != undefined)
+            if (instance[0].grade < threshold) {
+                //Insert into alerts array
+                let newAlert = await sequelize.query(`CALL insert_alert_history(?,?)`, {
+                    replacements: [instance_id, advisorID[0].user_id],
+                    type: sequelize.QueryTypes.CALL
+                });
+            }
     }
-    if(result[0].end_date<date)
-    {
-        report.push("Member failed to submit "+type+" on time");
+    if (type === 'milestone')
+        instance = await sequelize.query('CALL get_team_instance(?,?,?)', { replacements: [form_id, instance_id], type: sequelize.QueryTypes.CALL });
+    else if (type === 'task') {
+        instance = await sequelize.query('CALL get_instance(?,?)', { replacements: [form_id, instance_id], type: sequelize.QueryTypes.CALL });
+    } else
+        instance = await sequelize.query('CALL get_form_instance(?,?,?)', { replacements: [form_id, instance_id, user_id], type: sequelize.QueryTypes.CALL });
+
+    if (instance[0].end_date < date) {
+        //Insert into alerts array for both 
+        let newAlert = await sequelize.query(`CALL insert_alert_history(?,?)`, {
+            replacements: [instance_id, advisorID[0].user_id],
+            type: sequelize.QueryTypes.CALL
+        });
     }
-    //let advisorID= await sequelize.query(`CALL get_student_advisor(?)`,{replacements:[user_id],
-    //type:sequelize.QueryTypes.CALL});
+
     //Email report
-    //sendEmail(advisorID[0]['email'],"Status Report",body);
+
+    //mail.sendEmail(advisorID[0]['email'],subject,body);
 }
 module.exports = form;
