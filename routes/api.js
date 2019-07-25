@@ -88,7 +88,7 @@ router.post('/updateForm', requireAuth, formController.updateForm);
 router.post('/submitForm', requireAuth, formController.submitForm);
 router.post('/deleteForm', requireAuth, formController.deleteForm);
 router.post('/getAnswers', requireAuth, formController.getAnswers);
-router.post('/getAllForms', requireAuth, formController.getAllForms)
+router.post('/getAllForms', requireAuth, formController.getAllForms);
 router.post('/getInstances', requireAuth, formController.getInstances);
 router.post('/assignForm', requireAuth, formController.assignForm);
 router.post('/getAttendance', requireAuth, formController.getAttendance);
@@ -97,7 +97,7 @@ router.post('/getAttendance', requireAuth, formController.getAttendance);
 router.post('/csvUpload', requireAuth, upload.single('file'), csvUploadController.uploadCSV);
 
 // Alerts
-router.post('/getUserDashboardAlerts', alertsController.getUserDashboardAlerts);
+router.post('/getUserDashboardAlerts', requireAuth, alertsController.getUserDashboardAlerts);
 
 // Testing for the frontend JSON.
 router.post('/frontendTest', requireAuth, frontendTestController.frontendTest);
