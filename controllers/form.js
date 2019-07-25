@@ -900,66 +900,71 @@ class form {
         return grade;
     }
 //Checks for trigger and email advisor as needed
-async function triggerCheck(user_id,form_id,instance_id,results)
-{
+async function triggerCheck(form_id, instance_id, results, team_id, user_id) {
 
-    let report=[];
+    let report = [];
     let tempResult;
     let type;
-    var date=new Date().toISOString().slice(0,10);
-
+    var date = new Date().toISOString().slice(0, 10);
+    let advisorID;
+    if (user_id != undefined)
+        advisorID = await sequelize.query('CALL get_student_advisor(?)', { replacements: [user_id], type: sequelize.QueryTypes.CALL });
+    else
+        advisorID = await sequelize.query('CALL get_team_advisor(?)', { replacements: [team_id], type: sequelize.QueryTypes.CALL });
     try {
         //get type
-        tempResult = await sequelize.query('CALL get_form_type(?)', {replacements:[ form_id ], type: sequelize.QueryTypes.CALL});
+        tempResult = await sequelize.query('CALL get_form_type(?)', { replacements: [form_id], type: sequelize.QueryTypes.CALL });
         type = tempResult[0]['type'];
-       
-    
-        // res.send({ thisType });
-    } catch(error) {
-        console.log(error);
-        res.send({ status : "failed in trigger"});
-    } 
-     
-    try {
-        //
-        tempResult = await sequelize.query('select * from form_instances where instance_id=?', 
-        {replacements:[ instance_id ], type: sequelize.QueryTypes.SELECT});
-        
-        
-        // res.send({ thisType });
-    } catch(error) {
-        console.log(error);
-        res.send({ status : "failed in trigger"});
-    }
-    
-    if(type==='survey')
-    {
-        // loop through instance
-        for (let i=0;i<results.length;i++)
-        {
-            let question = await sequelize.query('CALL get_form_question(?)', 
-            {replacements:[ results[i].question_id ], type: sequelize.QueryTypes.CALL});
 
-            if(question[0] !== undefined && question[0].question_threshold>results[i].text)
-            {
-              report.push("Member reported poorly on question");  
+
+        // res.send({ thisType });
+    } catch (error) {
+        console.log(error);
+        // res.send({ status: "Failed"
+    }
+
+    if (type === 'survey') {
+        for (let i = 0; i < results.length; i++) {
+            //Get question threshold
+            let question = await sequelize.query('CALL get_form_question(?)', { replacements: [results[i].question_id], type: sequelize.QueryTypes.CALL });
+            if (question[0].question_threshold != null && question[0].question_threshold > results[i].text) {
+                //Insert into alerts array
+                let newAlert = await sequelize.query(`CALL insert_alert_history(?,?)`, {
+                    replacements: [instance_id, advisorID[0].user_id],
+                    type: sequelize.QueryTypes.CALL
+                });
             }
         }
     }
-    if(type==='quiz')
-    {
-        if(results[0].grade<form[0].form_threshold)
-        {
-            report.push("Member Has Performed poorly on a quiz");
-        }
+    if (type === 'quiz') {
+        tempForm = await sequelize.query('CALL get_form(?)', { replacements: [form_id], type: sequelize.QueryTypes.CALL });
+        threshold = tempForm[0]['form_threshold'];
+        if (threshold != undefined)
+            if (instance[0].grade < threshold) {
+                //Insert into alerts array
+                let newAlert = await sequelize.query(`CALL insert_alert_history(?,?)`, {
+                    replacements: [instance_id, advisorID[0].user_id],
+                    type: sequelize.QueryTypes.CALL
+                });
+            }
     }
-    if(results[0].end_date<date)
-    {
-        report.push("Member failed to submit "+type+" on time");
+    if (type === 'milestone')
+        instance = await sequelize.query('CALL get_team_instance(?,?,?)', { replacements: [form_id, instance_id], type: sequelize.QueryTypes.CALL });
+    else if (type === 'task') {
+        instance = await sequelize.query('CALL get_instance(?,?)', { replacements: [form_id, instance_id], type: sequelize.QueryTypes.CALL });
+    } else
+        instance = await sequelize.query('CALL get_form_instance(?,?,?)', { replacements: [form_id, instance_id, user_id], type: sequelize.QueryTypes.CALL });
+
+    if (instance[0].end_date < date) {
+        //Insert into alerts array for both 
+        let newAlert = await sequelize.query(`CALL insert_alert_history(?,?)`, {
+            replacements: [instance_id, advisorID[0].user_id],
+            type: sequelize.QueryTypes.CALL
+        });
     }
-    //let advisorID= await sequelize.query(`CALL get_student_advisor(?)`,{replacements:[user_id],
-    //type:sequelize.QueryTypes.CALL});
+
     //Email report
-    //sendEmail(advisorID[0]['email'],"Status Report",body);
+
+    //mail.sendEmail(advisorID[0]['email'],subject,body);
 }
 module.exports = form;
