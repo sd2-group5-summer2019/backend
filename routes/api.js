@@ -15,6 +15,7 @@ const sponsorController = require('../controllers/sponsor');
 const formController = require('../controllers/form');
 const frontendTestController = require('../controllers/frontendTest');
 const csvUploadController = require('../controllers/csvUpload');
+const alertsController = require('../controllers/alerts');
 
 const csvTypes = [
     'text/plain',
@@ -94,6 +95,9 @@ router.post('/getAttendance', requireAuth, formController.getAttendance);
 
 // CSV Upload
 router.post('/csvUpload', requireAuth, upload.single('file'), csvUploadController.uploadCSV);
+
+// Alerts
+router.post('/getUserDashboardAlerts', alertsController.getUserDashboardAlerts);
 
 // Testing for the frontend JSON.
 router.post('/frontendTest', requireAuth, frontendTestController.frontendTest);
