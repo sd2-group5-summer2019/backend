@@ -26,7 +26,7 @@ class studentInfo {
             }
         }
 
-        if(type == 'advisor')
+        if(type === 'advisor')
         {
             try
             {
@@ -74,6 +74,20 @@ class studentInfo {
             res.send({status : "update student failed"});
         }
         res.send({status : "update student success"});
+    }
+
+    static async getStudentName(req, res, next) {
+        const {user_id}   = req.body;
+        let student_name;
+        try{
+            student_name = await sequelize.query('Call get_student_name(?)',
+            { replacements: [user_id], types: sequelize.QueryTypes.CALL });
+            console.log(student_name);
+        }catch(error){
+            console.log("get student name failed");
+            res.send({status: "get student name failed"});
+        }
+        res.send(student_name[0]);
     }
 }
 
