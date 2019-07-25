@@ -72,7 +72,6 @@ router.post('/getSurvey', requireAuth, surveyController.getSurvey);
 
 // Team stuff
 router.post('/getAllTeams', requireAuth, teamController.getAllTeams);
-//router.post('/generateReport' /*, requireAuth*/ , teamController.generateReport);
 router.post('/createTeam', requireAuth, teamController.createTeam);
 router.post('/getTeamID', requireAuth, teamController.getTeamID);
 router.post('/getTeamMembers', requireAuth, teamController.getTeamMembers);

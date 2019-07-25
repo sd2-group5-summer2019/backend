@@ -25,7 +25,7 @@ class form {
 
             try {
                 returnFormID = await sequelize.query(
-                    'CALL insert_form(?,?,?,?,?,?)', { replacements: [access_level, description, title, type, user_id, null], type: sequelize.QueryTypes.CALL });
+                    'CALL insert_form(?,?,?,?,?,?)', { replacements: [access_level, description, null, title, type, user_id], type: sequelize.QueryTypes.CALL });
                 // console.log(returnFormID[0]['LAST_INSERT_ID()']);
                 form_id = returnFormID[0]['LAST_INSERT_ID()'];
                 console.log(form_id);
@@ -70,9 +70,8 @@ class form {
                 if (threshold === undefined) {
                     threshold = null;
                 }
-
                 returnFormID = await sequelize.query(
-                    'CALL insert_form(?,?,?,?,?,?)', { replacements: [access_level, description, title, type, user_id, threshold], type: sequelize.QueryTypes.CALL });
+                    'CALL insert_form(?,?,?,?,?,?)', { replacements: [access_level, description, threshold, title, type, user_id], type: sequelize.QueryTypes.CALL });
                 // console.log(returnFormID[0]['LAST_INSERT_ID()']);
                 form_id = returnFormID[0]['LAST_INSERT_ID()'];
                 // console.log(form_id);
@@ -152,7 +151,7 @@ class form {
 
                 // Insert the form and return is the new ID.
                 returnFormID = await sequelize.query(
-                    'CALL insert_form(?,?,?,?,?,?)', { replacements: [access_level, description, title, type, user_id, null], type: sequelize.QueryTypes.CALL });
+                    'CALL insert_form(?,?,?,?,?,?)', { replacements: [access_level, description, null, title, type, user_id], type: sequelize.QueryTypes.CALL });
 
                 form_id = returnFormID[0]['LAST_INSERT_ID()'];
                 // console.log(form_id);
@@ -199,7 +198,7 @@ class form {
 
                 returnFormID = await sequelize.query(
                     'CALL insert_form(?,?,?,?,?,?)', {
-                        replacements: [access_level, description, title, type, user_id, thresholdTemp],
+                        replacements: [access_level, description, thresholdTemp, title, type, user_id],
                         type: sequelize.QueryTypes.CALL
                     });
                 // console.log(returnFormID[0]['LAST_INSERT_ID()']);
@@ -252,7 +251,7 @@ class form {
 
             try {
                 returnFormID = await sequelize.query(
-                    'CALL insert_form(?,?,?,?,?,?)', { replacements: [access_level, description, title, type, user_id, null], type: sequelize.QueryTypes.CALL });
+                    'CALL insert_form(?,?,?,?,?,?)', { replacements: [access_level, description, null, title, type, user_id], type: sequelize.QueryTypes.CALL });
                 // console.log(returnFormID[0]['LAST_INSERT_ID()']);
                 form_id = returnFormID[0]['LAST_INSERT_ID()'];
                 // console.log(form_id);
@@ -288,16 +287,22 @@ class form {
                 let meeting = await sequelize.query('CALL meeting_complete(?)', { replacements: [instance_id], type: sequelize.QueryTypes.CALL });
                 for (let i = 0; i < users.length; i++) {
                     let insert = await sequelize.query('CALL insert_form_attendance(?,?,?,?)', { replacements: [users[i].did_attend, instance_id, users[i].reason, users[i].user_id], type: sequelize.QueryTypes.CALL });
+                    let alert = false;
                     if (!users[i].did_attend) {
+                        //set alert to true
+                        alert = true;
+                    }
+                    if (alert) {
                         //get advisor
-                        let advisorID = await sequelize.query('CALL get_student_advisor(?)', { replacements: [users[i].user_id], type: sequelize.QueryTypes.CALL });
+
+                        let coordinator = await sequelize.query('CALL get_my_coordinator_id(?)', { replacements: [users[i].user_id], type: sequelize.QueryTypes.CALL });
+                        let coordinatorID = coordinator[0].user_id;
                         //add alert to table
                         //Insert into alerts array
                         let newAlert = await sequelize.query(`CALL insert_alert_history(?,?)`, {
-                            replacements: [instance_id, advisorID[0].user_id],
+                            replacements: [instance_id, coordinatorID],
                             type: sequelize.QueryTypes.CALL
                         })
-
                     }
                 }
             } catch (error) {
@@ -424,7 +429,7 @@ class form {
             let grade = await quizGrader(form_id, instance_id, results, null, user_id);
             //status.grade=grade.toString();
 
-            await triggerCheck(user_id, form_id, instance_id, results);
+            await triggerCheck(form_id, instance_id, results, null, user_id);
         }
 
         if (type === 'task') {
@@ -736,7 +741,6 @@ async function quizGrader(user_id, form_id, instance_id, responses) {
     } catch (error) {
         console.log(error)
     }
-
     //get # of distinct question_ids
     let final = 0.0;
     let distinct_set = new Set(keys.map(x => x.question_id));
@@ -773,17 +777,13 @@ async function quizGrader(user_id, form_id, instance_id, responses) {
                 //Fill Blank Type - Compare using dice coeffiecent and levenstein distances
                 if (key_subset[k].question_type === 'fill_blank') {
                     let coeffiecent = dice(response_subset[j].text, key_subset[k].key_text);
-                    let distance = levenstein(response_subset[j].text, key_subset[k].key_text);
-                    //Prevent false correct for really short answers
-
+                    //Texts are similar enough, so correct
                     if (coeffiecent >= .8) {
                         correct++;
-
                     }
                 }
 
             }
-
         }
         final += correct / (key_subset.length);
     };
@@ -792,6 +792,8 @@ async function quizGrader(user_id, form_id, instance_id, responses) {
         grade = (final /= distinct_keys.length) * 100;
     } else
         grade = 42;
+    //Convert grade to integer
+    grade = parseInt(grade);
     //Insert Grades
     try {
         var responses = await sequelize.query(
@@ -804,41 +806,41 @@ async function quizGrader(user_id, form_id, instance_id, responses) {
 }
 //Checks for trigger and email advisor as needed
 async function triggerCheck(form_id, instance_id, results, team_id, user_id) {
-
-    let report = [];
-    let tempResult;
-    let type;
+    let tempResult, type, coordinator, coordinatorID;
     var date = new Date().toISOString().slice(0, 10);
-    let advisorID;
-    if (user_id != undefined)
-        advisorID = await sequelize.query('CALL get_student_advisor(?)', { replacements: [user_id], type: sequelize.QueryTypes.CALL });
-    else
-        advisorID = await sequelize.query('CALL get_team_advisor(?)', { replacements: [team_id], type: sequelize.QueryTypes.CALL });
+    if (user_id != null) {
+        coordinator = await sequelize.query('CALL get_my_coordinator_id(?)', { replacements: [user_id], type: sequelize.QueryTypes.CALL });
+        coordinatorID = coordinator[0].user_id;
+    } else {
+        coordinator = await sequelize.query('CALL get_team_coordinator_id(?)', { replacements: [user_id], type: sequelize.QueryTypes.CALL });
+        coordinatorID = coordinator[0].user_id;
+    }
     try {
         //get type
         tempResult = await sequelize.query('CALL get_form_type(?)', { replacements: [form_id], type: sequelize.QueryTypes.CALL });
         type = tempResult[0]['type'];
-
-
-        // res.send({ thisType });
     } catch (error) {
         console.log(error);
-        // res.send({ status: "Failed"
     }
 
     if (type === 'survey') {
+        let alert = false;
         for (let i = 0; i < results.length; i++) {
             //Get question threshold
             let question = await sequelize.query('CALL get_form_question(?)', { replacements: [results[i].question_id], type: sequelize.QueryTypes.CALL });
             if (question[0].question_threshold != null && question[0].question_threshold > results[i].text) {
-                //Insert into alerts array
-                let newAlert = await sequelize.query(`CALL insert_alert_history(?,?)`, {
-                    replacements: [instance_id, advisorID[0].user_id],
-                    type: sequelize.QueryTypes.CALL
-                });
+                alert = true;
             }
         }
+        if (alert) {
+            //Insert into alerts array
+            let newAlert = await sequelize.query(`CALL insert_alert_history(?,?)`, {
+                replacements: [instance_id, coordinatorID],
+                type: sequelize.QueryTypes.CALL
+            });
+        }
     }
+    //Checking form threshold for quizzes
     if (type === 'quiz') {
         tempForm = await sequelize.query('CALL get_form(?)', { replacements: [form_id], type: sequelize.QueryTypes.CALL });
         threshold = tempForm[0]['form_threshold'];
@@ -846,28 +848,27 @@ async function triggerCheck(form_id, instance_id, results, team_id, user_id) {
             if (instance[0].grade < threshold) {
                 //Insert into alerts array
                 let newAlert = await sequelize.query(`CALL insert_alert_history(?,?)`, {
-                    replacements: [instance_id, advisorID[0].user_id],
+                    replacements: [instance_id, coordinatorID],
                     type: sequelize.QueryTypes.CALL
                 });
             }
     }
+    //Milestone requires a team id to get the instance
     if (type === 'milestone')
         instance = await sequelize.query('CALL get_team_instance(?,?,?)', { replacements: [form_id, instance_id], type: sequelize.QueryTypes.CALL });
+    //Task requires the user_id to be from the forms table
     else if (type === 'task') {
         instance = await sequelize.query('CALL get_instance(?,?)', { replacements: [form_id, instance_id], type: sequelize.QueryTypes.CALL });
     } else
         instance = await sequelize.query('CALL get_form_instance(?,?,?)', { replacements: [form_id, instance_id, user_id], type: sequelize.QueryTypes.CALL });
-
+    //Assignment was late, so insert into alert history
     if (instance[0].end_date < date) {
         //Insert into alerts array for both 
         let newAlert = await sequelize.query(`CALL insert_alert_history(?,?)`, {
-            replacements: [instance_id, advisorID[0].user_id],
+            replacements: [instance_id, coordinatorID],
             type: sequelize.QueryTypes.CALL
         });
     }
-
-    //Email report
-
-    //mail.sendEmail(advisorID[0]['email'],subject,body);
 }
+
 module.exports = form;
