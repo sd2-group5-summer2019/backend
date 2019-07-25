@@ -75,8 +75,10 @@ class login {
     }
 
     static async login_secure(req, res, next) {
-        res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
+        //res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
         const { username, password } = req.body;
+
+        console.log(username, password);
 
         const token = tokenForUser(username);
     

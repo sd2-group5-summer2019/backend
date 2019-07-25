@@ -14,9 +14,9 @@ const teamController = require('../controllers/team');
 const sponsorController = require('../controllers/sponsor');
 const formController = require('../controllers/form');
 const frontendTestController = require('../controllers/frontendTest');
-const registerCSVController = require('../controllers/registerCSV');
 const analyticsController = require('../controllers/analytics');
 const csvUploadController = require('../controllers/csvUpload');
+const alertsController = require('../controllers/alerts');
 
 const csvTypes = [
     'text/plain',
@@ -63,6 +63,8 @@ router.post('/setNewPassword', requireAuth, registerController.setNewPassword);
 router.post('/getAllStudents', requireAuth, studentController.getAllStudents);
 router.post('/insertStudent', requireAuth, studentController.insertStudent);
 router.post('/updateStudent', requireAuth, studentController.updateStudent);
+router.post('/getStudentName', requireAuth, studentController.updateStudent);
+
 
 // Taking survey routes.
 router.post('/getSurvey', requireAuth, surveyController.getSurvey);
@@ -73,7 +75,7 @@ router.post('/getAllTeams', requireAuth, teamController.getAllTeams);
 //router.post('/generateReport' /*, requireAuth*/ , teamController.generateReport);
 router.post('/createTeam', requireAuth, teamController.createTeam);
 router.post('/getTeamID', requireAuth, teamController.getTeamID);
-router.post('/sendEmail', teamController.sendEmail);
+router.post('/getTeamMembers', requireAuth, teamController.getTeamMembers);
 
 // Sponsor stuff
 router.post('/getAllSponsors', requireAuth, sponsorController.getAllSponsors);
@@ -87,15 +89,21 @@ router.post('/updateForm', requireAuth, formController.updateForm);
 router.post('/submitForm' /*, requireAuth*/ , formController.submitForm);
 router.post('/deleteForm', requireAuth, formController.deleteForm);
 router.post('/getAnswers', requireAuth, formController.getAnswers);
-router.post('/getAllForms', requireAuth, formController.getAllForms)
+router.post('/getAllForms', requireAuth, formController.getAllForms);
 router.post('/getInstances', requireAuth, formController.getInstances);
-router.post('/assignForm' /*, requireAuth*/ , formController.assignForm);
+router.post('/assignForm', requireAuth, formController.assignForm);
+router.post('/getAttendance', requireAuth, formController.getAttendance);
 
 // CSV Upload
 router.post('/csvUpload', requireAuth, upload.single('file'), csvUploadController.uploadCSV);
 
+// Alerts
+router.post('/getUserDashboardAlerts', requireAuth, alertsController.getUserDashboardAlerts);
+
 // Testing for the frontend JSON.
 router.post('/frontendTest', requireAuth, frontendTestController.frontendTest);
 
-router.post('/getAnalytics', analyticsController.questionAnalytics);
+
+
+//router.post('/getAnalytics', analyticsController.questionAnalytics);
 module.exports = router;

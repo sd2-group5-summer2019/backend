@@ -193,6 +193,21 @@ class teamInfo {
         res.send(200);
     }
 
-
+    static async getTeamMembers(req, res, next) {
+        const { team_id } = req.body;
+        console.log(team_id)
+        let team_members;
+        try {
+            team_members = await sequelize.query('CALL get_team_names(?);', { replacements: [team_id], type: sequelize.QueryTypes.CALL });
+            console.log(team_members);
+        } catch (error) {
+            console.log("get team members failed");
+            res.send({ status: "get team members failed" });
+        }
+        res.send({ status: "success", team_members: team_members });
+    }
 }
+
+
+
 module.exports = teamInfo;
