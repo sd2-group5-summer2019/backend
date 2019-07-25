@@ -430,6 +430,16 @@ class form {
             let grade = await quizGrader(user_id, form_id, instance_id, results);
             status.grade = grade;
 
+            let team_id;
+
+            try{
+                team_id = await sequelize.query('CALL get_team_id(?)',
+                {replacements : [user_id], type : sequelize.QueryTypes.CALL});
+            }catch(error){
+                console.log(error);
+                res.send({status : "get team id failed"});
+            }
+
             triggerCheck(form_id, instance_id, results, team_id, user_id);
 
             /*
