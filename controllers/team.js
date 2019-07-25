@@ -26,7 +26,7 @@ class teamInfo {
 
     static async createTeam(req,res,next){
 
-        const {user_id, project_name, description, sd1_semester, sd1_year, sd2_semester, sd2_year, sponsor} = req.body;
+        const { user_id, project_name, description, sd1_semester, sd1_year, sd2_semester, sd2_year } = req.body;
         let user_type;
 
         // Check to see if user_id is type coordinator/
@@ -42,7 +42,7 @@ class teamInfo {
         console.log("Get User Type Success");
 
         // If user is not coordinator, return to frontend.
-        if(user_type != 'coordinator'){
+        if(user_type !== 'coordinator'){
             res.send({status : "User is not Coordinator"});
         }
 
@@ -50,8 +50,8 @@ class teamInfo {
 
         // Insert team.
         try{
-            let result = await sequelize.query('CALL insert_team(?,?,?,?,?,?,?,?)',
-            { replacements : [description, project_name, sd1_semester, sd1_year, sd2_semester, sd2_year, sponsor, user_id],
+            let result = await sequelize.query('CALL insert_team(?,?,?,?,?,?,?)',
+            { replacements : [description, project_name, sd1_semester, sd1_year, sd2_semester, sd2_year, user_id],
             type : sequelize.QueryTypes.CALL});
             newTeamID = result[0]['LAST_INSERT_ID()'];
         }catch(error){

@@ -53,7 +53,7 @@ router.post('/changePassword', loginController.changePassword);
 router.post('/verifyStudentEmail', loginController.verifyStudentEmail);
 
 // Register routes.
-router.post('/register', requireAuth, registerController.register);
+router.post('/register', registerController.register);
 router.post('/verifyCode', requireAuth, registerController.verifyCode);
 router.post('/setNewPassword', requireAuth, registerController.setNewPassword);
 
@@ -89,7 +89,8 @@ router.post('/getInstances', requireAuth, formController.getInstances);
 router.post('/assignForm', requireAuth, formController.assignForm);
 
 // CSV Upload
-router.post('/csvUpload', requireAuth, upload.single('file'), csvUploadController.uploadCSV);
+router.post('/studentUpload', requireAuth, upload.single('file'), csvUploadController.uploadStudentCSV);
+router.post('/teamUpload', requireAuth, upload.single('file'), csvUploadController.uploadTeamCSV);
 
 // Testing for the frontend JSON.
 router.post('/frontendTest', requireAuth, frontendTestController.frontendTest);
