@@ -948,12 +948,12 @@ async function triggerCheck(user_id,form_id,instance_id,results)
     }
     if(type==='quiz')
     {
-        if(result[0].grade<form[0].form_threshold)
+        if(results[0].grade<form[0].form_threshold)
         {
             report.push("Member Has Performed poorly on a quiz");
         }
     }
-    if(result[0].end_date<date)
+    if(results[0].end_date<date)
     {
         report.push("Member failed to submit "+type+" on time");
     }
