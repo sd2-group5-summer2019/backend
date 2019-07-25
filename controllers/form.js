@@ -911,7 +911,7 @@ async function triggerCheck(user_id,form_id,instance_id,results)
     try {
         //get type
         tempResult = await sequelize.query('CALL get_form_type(?)', {replacements:[ form_id ], type: sequelize.QueryTypes.CALL});
-        type = result[0]['type'];
+        type = tempResult[0]['type'];
        
     
         // res.send({ thisType });

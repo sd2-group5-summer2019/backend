@@ -76,8 +76,8 @@ class studentInfo {
         res.send({status : "update student success"});
     }
 
-    static async getStudentName(req, res, next) {
-        const {user_id}   = req.body;
+    static async getStudentName(res, req, next) {
+        const {user_id} = req.body;
         let student_name;
         try{
             student_name = await sequelize.query('Call get_student_name(?)',
