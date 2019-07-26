@@ -549,7 +549,7 @@ class form {
     static async getAnswers(req, res, next) {
 
         const { userid, formid } = req.body;
-        console.log(userid);
+        console.log(req.body);
         let type;
         let status = {};
         let answers;
