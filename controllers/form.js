@@ -573,7 +573,7 @@ class form {
                 // CALL get_user_form_answers(?)
                 answers = await sequelize.query(
                     'CALL get_form_results(?,?)', 
-                    {replacements:[ userid, form_id ], type: sequelize.QueryTypes.CALL});
+                    {replacements:[ userid, formid ], type: sequelize.QueryTypes.CALL});
                 status.status2 = "Success"    
                 next;
             } catch (error) {
@@ -590,7 +590,7 @@ class form {
                 // CALL get_user_form_answers(?)
                 answers = await sequelize.query(
                     'CALL get_form_results(?,?)', 
-                    {replacements:[ userid, form_id ], type: sequelize.QueryTypes.CALL});
+                    {replacements:[ userid, formid ], type: sequelize.QueryTypes.CALL});
                 status.status2 = "Success"    
                 next;
             } catch (error) {
