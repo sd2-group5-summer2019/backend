@@ -77,7 +77,7 @@ class studentInfo {
     }
 
     static async getStudentName(req, res, next) {
-        console.log(user_id)
+        
         const {user_id}   = req.body;
         let student_name;
         try{
